@@ -1,4 +1,7 @@
 ﻿using ChatSystem.Models;
+using ChatSystem.Services;
+
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace ChatSystem.Interfaces;
 public interface IMessageHandler<T> where T : BaseMessage
@@ -41,6 +44,9 @@ public interface IMessageBroadcaster
     Task BroadcastAsync<T>(T message, string? excludeClientId = null) where T : BaseMessage;
     Task SendToClientAsync<T>(string clientId, T message) where T : BaseMessage;
     Task SendToUsernameAsync<T>(string username, T message) where T : BaseMessage;
+    void RegisterConnection(string clientId, IClientConnection connection);
+    void UnregisterConnection(string clientId);
+
 }
 
 public interface ICommandProcessor

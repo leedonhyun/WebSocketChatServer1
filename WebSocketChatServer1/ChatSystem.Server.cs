@@ -81,7 +81,7 @@ public class ChatServer
                 fileChannel,
                 _serviceProvider.GetRequiredService<ILogger<WebSocketClientConnection>>());
 
-            if (_broadcaster is MessageBroadcaster broadcaster)
+            if (_broadcaster is IMessageBroadcaster broadcaster)
             {
                 broadcaster.RegisterConnection(clientId, connection);
             }
