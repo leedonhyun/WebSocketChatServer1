@@ -14,7 +14,7 @@ builder.Logging.AddOpenTelemetryLogging(builder.Configuration);
 builder.Services.AddChatSystem();
 
 // OpenTelemetry 추가
-builder.Services.AddOpenTelemetry(builder.Configuration);
+//builder.Services.AddOpenTelemetry(builder.Configuration);
 
 // API 컨트롤러 추가
 builder.Services.AddControllers();
@@ -68,30 +68,11 @@ app.UseWebSockets();
 app.UseStaticFiles();
 
 // Prometheus 메트릭 엔드포인트 추가
-app.MapPrometheusScrapingEndpoint();
+//app.MapPrometheusScrapingEndpoint();
 
 // API 컨트롤러 매핑
 app.MapControllers();
 
-// Fix: Replace UseEndpoints with top-level route registrations
-//app.MapGet("/", async context =>
-//{
-//    await context.Response.WriteAsync("WebSocket Chat Server is running. Connect to /ws");
-//});
-
-//app.Map("/ws", async context =>
-//{
-//    if (context.WebSockets.IsWebSocketRequest)
-//    {
-//        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-//        var chatServer = context.RequestServices.GetRequiredService<ChatServer>();
-//        await chatServer.HandleWebSocketAsync(context, webSocket);
-//    }
-//    else
-//    {
-//        context.Response.StatusCode = 400;
-//    }
-//});
 
 //app.Run();       {
 app.MapGet("/", async context =>
