@@ -217,7 +217,7 @@ public static class ServiceCollectionExtensions
         // 핸들러 등록
         services.AddScoped<IMessageHandler<ChatMessage>, ChatMessageHandler>();
         services.AddScoped<IMessageHandler<FileTransferMessage>, FileTransferHandler>();
-
+        services.AddSingleton<IFileTransferStateService, FileTransferStateService>();
         // 명령 처리기 등록
         services.AddScoped<ICommandProcessor, UsernameCommandProcessor>();
         services.AddScoped<ICommandProcessor, UserListCommandProcessor>();

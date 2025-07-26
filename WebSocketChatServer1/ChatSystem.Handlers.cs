@@ -75,18 +75,20 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
     private readonly IFileStorageService _fileStorage;
     private readonly IClientManager _clientManager;
     private readonly IMessageBroadcaster _broadcaster;
-    private readonly ConcurrentDictionary<string, FileTransferInfo> _activeTransfers = new();
+    private readonly IFileTransferStateService _transferStateService;
     private readonly ILogger<FileTransferHandler> _logger;
 
     public FileTransferHandler(
         IFileStorageService fileStorage,
         IClientManager clientManager,
         IMessageBroadcaster broadcaster,
+        IFileTransferStateService transferStateService,
         ILogger<FileTransferHandler> logger)
     {
         _fileStorage = fileStorage;
         _clientManager = clientManager;
         _broadcaster = broadcaster;
+        _transferStateService = transferStateService;
         _logger = logger;
     }
 
@@ -128,7 +130,7 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
         if (message.ChunkIndex == 0)
         {
             message.FileInfo.FromUsername = client.Username;
-            _activeTransfers[message.FileId] = message.FileInfo;
+            _transferStateService.TryAddTransfer(message.FileId, message.FileInfo);
             _logger.LogInformation($"Starting file upload: {message.FileInfo.FileName} from {client.Username}");
         }
 
@@ -153,6 +155,8 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
         message.FromUsername = client.Username;
         message.FileInfo.FromUsername = client.Username;
 
+        // 파일 정보를 _activeTransfers에 추가
+        _transferStateService.TryAddTransfer(message.FileId, message.FileInfo);
         // 자동 다운로드 시작 알림
         var autoMessage = new ChatMessage
         {
@@ -182,7 +186,7 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
 
     private async Task StartFileTransferAsync(string fileId, string targetUsername)
     {
-        if (!_activeTransfers.TryGetValue(fileId, out var fileInfo)) return;
+        if (!_transferStateService.TryGetTransfer(fileId, out var fileInfo)) return;
 
         var filePath = _fileStorage.GetFilePath(fileId, fileInfo.FileName);
         if (!await _fileStorage.FileExistsAsync(filePath)) return;
@@ -314,6 +318,9 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
         message.FromUsername = client.Username;
         message.FileInfo.FromUsername = client.Username;
 
+        // 파일 정보를 _activeTransfers에 추가
+        _transferStateService.TryAddTransfer(message.FileId, message.FileInfo);
+
         _logger.LogInformation($"File offer from {client.Username}: {message.FileInfo.FileName} ({message.FileInfo.FileSize} bytes)");
 
         // 특정 사용자에게만 전송하거나 모든 사용자에게 브로드캐스트
@@ -343,7 +350,7 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
 
     private async Task HandleFileAcceptAsync(string clientId, FileTransferMessage message)
     {
-        if (!_activeTransfers.TryGetValue(message.FileId, out var fileInfo))
+       if (!_transferStateService.TryGetTransfer(message.FileId, out var fileInfo))
         {
             _logger.LogWarning($"File accept for unknown file ID: {message.FileId}");
 
@@ -392,7 +399,7 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
 
     private async Task HandleFileRejectAsync(string clientId, FileTransferMessage message)
     {
-        if (!_activeTransfers.TryGetValue(message.FileId, out var fileInfo))
+        if (!_transferStateService.TryGetTransfer(message.FileId, out var fileInfo))
         {
             _logger.LogWarning($"File reject for unknown file ID: {message.FileId}");
             return;
@@ -426,5 +433,6 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
 
         // 전송 정보에서 제거 (다른 사용자들은 여전히 수락 가능)
         // 완전 제거하지 않고 특정 사용자만 거절 처리하려면 별도 거절 목록 관리
+        // 예: _transferStateService.TryRemoveTransfer(message.FileId);
     }
 }
