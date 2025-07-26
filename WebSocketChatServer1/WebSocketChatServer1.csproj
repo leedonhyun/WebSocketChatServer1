@@ -14,6 +14,7 @@
     <Compile Remove="ChatSystem.Commands.cs" />
     <Compile Remove="ChatSystem.Handlers.cs" />
     <Compile Remove="ChatSystem.Interfaces%3b.cs" />
+    <Compile Remove="ChatSystem.Models.cs" />
     <Compile Remove="Class.cs" />
   </ItemGroup>
 
