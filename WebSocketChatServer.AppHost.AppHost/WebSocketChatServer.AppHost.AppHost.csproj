@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.1.0" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAspireHost>true</IsAspireHost>
+    <UserSecretsId>7bbd798b-0e52-495b-92ac-4683667789b8</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.3.1" />
+    <PackageReference Include="Aspire.Hosting.Redis" Version="9.3.1" />
+    <PackageReference Include="Aspire.Hosting.MongoDB" Version="9.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="prometheus.yml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebSocketChatServer.AppHost.ServiceDefaults\WebSocketChatServer.AppHost.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\WebSocketChatServer1\WebSocketChatServer1.csproj" />
+    <ProjectReference Include="..\WebSocketChatServer.UserApi\WebSocketChatServer.UserApi.csproj" />
+  </ItemGroup>
+
+</Project>

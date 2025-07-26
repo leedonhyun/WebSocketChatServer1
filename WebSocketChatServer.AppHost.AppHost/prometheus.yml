@@ -1,0 +1,45 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # WebSocket Chat Server metrics (Prometheus exporter)
+  - job_name: "websocket-chat-server"
+    static_configs:
+      - targets: ["host.docker.internal:5106"]  # Chat Server Prometheus endpoint
+    metrics_path: /metrics
+    scrape_interval: 5s
+
+  # User API Server metrics (ASP.NET Core built-in metrics)
+  - job_name: "user-api-server"
+    static_configs:
+      - targets: ["host.docker.internal:5107"]  # User API Server Prometheus endpoint
+    metrics_path: /metrics
+    scrape_interval: 5s
+
+  # Aspire Dashboard metrics - 주석 처리 (포트 확인 필요)
+  # - job_name: "aspire-dashboard"
+  #   static_configs:
+  #     - targets: ["host.docker.internal:18888"]  # Aspire dashboard metrics
+  #   scrape_interval: 10s
+
+  # Redis metrics - Redis는 기본적으로 Prometheus 메트릭을 노출하지 않음
+  # - job_name: "redis"
+  #   static_configs:
+  #     - targets: ["host.docker.internal:6379"]
+  #   scrape_interval: 10s
+
+  # MongoDB metrics - MongoDB는 기본적으로 Prometheus 메트릭을 노출하지 않음
+  # - job_name: "mongodb"
+  #   static_configs:
+  #     - targets: ["host.docker.internal:27017"]
+  #   scrape_interval: 15s
