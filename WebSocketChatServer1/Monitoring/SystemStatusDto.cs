@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ChatSystem.Monitoring;
+namespace WebSocketChatServer1.Monitoring;
 
 public class SystemStatusDto
 {

@@ -1,6 +1,6 @@
 using System;
 
-namespace ChatSystem.Monitoring;
+namespace WebSocketChatServer1.Monitoring;
 
 // 모니터링 API용 DTO들
 public class CommandStatsDto

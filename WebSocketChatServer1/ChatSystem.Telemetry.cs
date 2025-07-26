@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
-namespace ChatSystem.Telemetry;
+namespace WebSocketChatServer1.Telemetry;
 
 /// <summary>
 /// WebSocket 채팅 서버의 텔레메트리를 관리하는 정적 클래스

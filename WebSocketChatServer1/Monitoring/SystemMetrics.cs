@@ -2,7 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
 
-namespace ChatSystem.Monitoring;
+namespace WebSocketChatServer1.Monitoring;
 
 [BsonIgnoreExtraElements]
 public class SystemMetrics

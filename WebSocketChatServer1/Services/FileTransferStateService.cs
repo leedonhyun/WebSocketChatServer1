@@ -1,8 +1,8 @@
-using ChatSystem.Interfaces;
-using ChatSystem.Models;
+using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Models;
 using System.Collections.Concurrent;
 
-namespace ChatSystem.Services;
+namespace WebSocketChatServer1.Services;
 
 public class FileTransferStateService : IFileTransferStateService
 {

@@ -1,6 +1,6 @@
 using System;
 
-namespace ChatSystem.Models;
+namespace WebSocketChatServer1.Models;
 public abstract class BaseMessage
 {
     public string Type { get; set; } = "";

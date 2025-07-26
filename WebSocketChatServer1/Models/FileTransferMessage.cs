@@ -1,4 +1,4 @@
-namespace ChatSystem.Models;
+namespace WebSocketChatServer1.Models;
 
 public class FileTransferMessage : BaseMessage
 {

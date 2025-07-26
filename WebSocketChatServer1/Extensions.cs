@@ -1,12 +1,12 @@
 ﻿using ChatSystem.Commands;
-using ChatSystem.Data;
-using ChatSystem.Handlers;
-using ChatSystem.Interfaces;
-using ChatSystem.Models;
-using ChatSystem.Monitoring;
-using ChatSystem.Server;
-using ChatSystem.Services;
-using ChatSystem.Telemetry;
+using WebSocketChatServer1.Data;
+using WebSocketChatServer1.Handlers;
+using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Models;
+using WebSocketChatServer1.Monitoring;
+using WebSocketChatServer1.Server;
+using WebSocketChatServer1.Services;
+using WebSocketChatServer1.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using OpenTelemetry.Logs;
@@ -15,7 +15,10 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using StackExchange.Redis;
 
-namespace ChatSystem.Extensions;
+using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Services;
+
+namespace WebSocketChatServer1.Extensions;
 
 public static class ServiceCollectionExtensions
 {
@@ -114,9 +117,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRoomActivityService, RoomActivityService>();
 
         // Command Logger 등록 (MongoDB 연결 상태에 따라 선택)
-        services.AddScoped<ChatSystem.Interfaces.ICommandLogger>(serviceProvider =>
+        services.AddScoped<WebSocketChatServer1.Interfaces.ICommandLogger>(serviceProvider =>
         {
-            var logger = serviceProvider.GetRequiredService<ILogger<ChatSystem.Services.NullCommandLogger>>();
+            var logger = serviceProvider.GetRequiredService<ILogger<NullCommandLogger>>();
 
             try
             {
@@ -125,7 +128,7 @@ public static class ServiceCollectionExtensions
                 if (mongoClient == null)
                 {
                     logger.LogWarning("MongoDB client is not available (connection failed or server not running), using null command logger");
-                    return new ChatSystem.Services.NullCommandLogger(logger);
+                    return new NullCommandLogger(logger);
                 }
 
                 // DbContext 생성 시도
@@ -154,34 +157,34 @@ public static class ServiceCollectionExtensions
                         catch (OperationCanceledException)
                         {
                             logger.LogWarning("MongoDB operation timeout, using null command logger");
-                            return new ChatSystem.Services.NullCommandLogger(logger);
+                            return new NullCommandLogger(logger);
                         }
                         catch (MongoDB.Driver.MongoAuthenticationException authEx)
                         {
                             logger.LogWarning(authEx, "MongoDB authentication failed, using null command logger");
-                            return new ChatSystem.Services.NullCommandLogger(logger);
+                            return new NullCommandLogger(logger);
                         }
                         catch (MongoDB.Driver.MongoConnectionException connEx)
                         {
                             logger.LogWarning(connEx, "MongoDB connection failed (server not responding), using null command logger");
-                            return new ChatSystem.Services.NullCommandLogger(logger);
+                            return new NullCommandLogger(logger);
                         }
                     }
 
                     // 여기에 도달하면 database가 null
                     logger.LogWarning("MongoDB database is not available, using null command logger");
-                    return new ChatSystem.Services.NullCommandLogger(logger);
+                    return new NullCommandLogger(logger);
                 }
                 catch (Exception dbEx)
                 {
                     logger.LogWarning(dbEx, "Failed to create ChatDbContext, using null command logger");
-                    return new ChatSystem.Services.NullCommandLogger(logger);
+                    return new NullCommandLogger(logger);
                 }
             }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Failed to create EfCoreCommandLogger, using null command logger");
-                return new ChatSystem.Services.NullCommandLogger(logger);
+                return new NullCommandLogger(logger);
             }
         });
 

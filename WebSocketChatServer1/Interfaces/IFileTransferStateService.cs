@@ -1,5 +1,5 @@
 // (Add this to your interfaces file)
-using ChatSystem.Models;
+using WebSocketChatServer1.Models;
 
 public interface IFileTransferStateService
 {

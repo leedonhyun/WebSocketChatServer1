@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace ChatSystem.Monitoring;
+using WebSocketChatServer1.Interfaces;
+
+namespace WebSocketChatServer1.Monitoring;
 
 public class NullMonitoringService : IMonitoringService
 {

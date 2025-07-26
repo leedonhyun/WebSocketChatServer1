@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ChatSystem.Models;
+namespace WebSocketChatServer1.Models;
 
 public class UserProfile
 {

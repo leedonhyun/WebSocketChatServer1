@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ChatSystem.Monitoring;
+using WebSocketChatServer1.Interfaces;
+
+namespace WebSocketChatServer1.Monitoring;
 
 public class MonitoringService : IMonitoringService
 {

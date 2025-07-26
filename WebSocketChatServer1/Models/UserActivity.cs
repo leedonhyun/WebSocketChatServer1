@@ -1,6 +1,6 @@
 using System;
 
-namespace ChatSystem.Models;
+namespace WebSocketChatServer1.Models;
 
 // Entity Framework Core 엔티티들
 public class UserActivity

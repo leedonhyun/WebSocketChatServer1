@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MongoDB.EntityFrameworkCore.Extensions;
-using ChatSystem.Models;
+using WebSocketChatServer1.Models;
 
-namespace ChatSystem.Data;
+namespace WebSocketChatServer1.Data;
 
 public class ChatDbContext : DbContext
 {

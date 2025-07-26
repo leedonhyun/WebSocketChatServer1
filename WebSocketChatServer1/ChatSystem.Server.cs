@@ -1,6 +1,5 @@
-﻿using ChatSystem.Interfaces;
-using ChatSystem.Models;
-using ChatSystem.Services;
+﻿using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Models;
 
 using Nerdbank.Streams;
 
@@ -9,7 +8,9 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 
-namespace ChatSystem.Server;
+using WebSocketChatServer1.Services;
+
+namespace WebSocketChatServer1.Server;
 
 public class ChatServer
 {

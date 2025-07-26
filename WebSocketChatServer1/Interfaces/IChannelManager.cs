@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ChatSystem.Interfaces;
+namespace WebSocketChatServer1.Interfaces;
 
 public interface IChannelManager
 {

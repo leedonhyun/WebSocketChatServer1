@@ -1,10 +1,10 @@
-using ChatSystem.Data;
-using ChatSystem.Interfaces;
-using ChatSystem.Models;
+using WebSocketChatServer1.Data;
+using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace ChatSystem.Services;
+namespace WebSocketChatServer1.Services;
 
 public class EfCoreCommandLogger : ICommandLogger
 {
@@ -42,6 +42,16 @@ public class EfCoreCommandLogger : ICommandLogger
         {
             _logger.LogError(ex, $"Failed to log command {commandType} to database for user {username}");
         }
+    }
+
+    public Task LogCommandAsync(string clientId, string? username, string commandType, object? parameters, bool success, double executionTimeMs, string? errorMessage = null, object? responseData = null)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task LogSystemMetricsAsync(int activeConnections, int activeGroups, long totalMessages, long totalFiles, long totalErrors)
+    {
+        throw new NotImplementedException();
     }
 }
 

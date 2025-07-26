@@ -16,7 +16,11 @@
     <Compile Remove="ChatSystem.Interfaces%3b.cs" />
     <Compile Remove="ChatSystem.Models.cs" />
     <Compile Remove="ChatSystem.Monitoring.cs" />
+    <Compile Remove="ChatSystem.Services.cs" />
     <Compile Remove="Class.cs" />
+    <Compile Remove="Monitoring\ICommandLogger.cs" />
+    <Compile Remove="Services\MongoCommandLogger.cs" />
+    <Compile Remove="Services\NullCommandLogger.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,6 @@
-using ChatSystem.Extensions;
-using ChatSystem.Server;
-using ChatSystem.Telemetry;
+using WebSocketChatServer1.Extensions;
+using WebSocketChatServer1.Server;
+using WebSocketChatServer1.Telemetry;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);

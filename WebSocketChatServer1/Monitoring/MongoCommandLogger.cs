@@ -1,3 +1,5 @@
+using WebSocketChatServer1.Interfaces;
+
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -5,7 +7,7 @@ using System;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace ChatSystem.Monitoring;
+namespace WebSocketChatServer1.Monitoring;
 
 // MongoDB 서비스 구현
 public class MongoCommandLogger : ICommandLogger
@@ -122,5 +124,10 @@ public class MongoCommandLogger : ICommandLogger
         {
             return new BsonDocument("data", obj.ToString());
         }
+    }
+
+    public Task LogCommandAsync(string clientId, string username, string commandType, string? parameters = null, bool success = true, double executionTimeMs = 0, string? errorMessage = null)
+    {
+        throw new NotImplementedException();
     }
 }

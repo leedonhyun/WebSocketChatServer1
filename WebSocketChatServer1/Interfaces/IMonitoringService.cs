@@ -1,8 +1,10 @@
+using WebSocketChatServer1.Monitoring;
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace ChatSystem.Monitoring;
+namespace WebSocketChatServer1.Interfaces;
 
 public interface IMonitoringService
 {

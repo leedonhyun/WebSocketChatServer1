@@ -1,7 +1,7 @@
-using ChatSystem.Interfaces;
-using ChatSystem.Models;
-using ChatSystem.Services;
-using ChatSystem.Telemetry;
+using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Models;
+using WebSocketChatServer1.Services;
+using WebSocketChatServer1.Telemetry;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

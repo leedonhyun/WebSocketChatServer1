@@ -1,5 +1,5 @@
-using ChatSystem.Interfaces;
-using ChatSystem.Models;
+using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;

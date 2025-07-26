@@ -1,8 +1,10 @@
-using ChatSystem.Models;
-using ChatSystem.Services;
+using WebSocketChatServer1.Models;
+
 using System.Threading.Tasks;
 
-namespace ChatSystem.Interfaces;
+using WebSocketChatServer1.Interfaces;
+
+namespace WebSocketChatServer1.Interfaces;
 
 public interface IMessageBroadcaster
 {

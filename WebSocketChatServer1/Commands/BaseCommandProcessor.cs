@@ -1,5 +1,5 @@
-using ChatSystem.Interfaces;
-using ChatSystem.Telemetry;
+using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Telemetry;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
