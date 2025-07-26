@@ -3,3 +3,4 @@
 **/uploads
 **/.vs
 **/node_modules
+/WebSocketChatServer1/appsettings.json
