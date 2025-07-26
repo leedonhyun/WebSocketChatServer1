@@ -137,7 +137,7 @@ public class ChatServer
             // 정리
             await _clientManager.RemoveClientAsync(clientId);
 
-            if (_broadcaster is MessageBroadcaster broadcaster)
+            if (_broadcaster is IMessageBroadcaster broadcaster)
             {
                 broadcaster.UnregisterConnection(clientId);
             }
