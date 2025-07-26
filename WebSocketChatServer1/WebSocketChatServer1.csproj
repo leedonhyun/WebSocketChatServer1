@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ChatSystem.Commands.cs" />
     <Compile Remove="Class.cs" />
   </ItemGroup>
 
