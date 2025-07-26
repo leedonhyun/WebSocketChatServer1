@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <Compile Remove="ChatSystem.Commands.cs" />
+    <Compile Remove="ChatSystem.Handlers.cs" />
     <Compile Remove="Class.cs" />
   </ItemGroup>
 
