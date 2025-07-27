@@ -114,4 +114,9 @@ public class UsernameCommandProcessor : BaseCommandProcessor
             await LogCommandAsync(clientId, command, args, stopwatch.Elapsed.TotalMilliseconds, success, errorMessage);
         }
     }
+
+    public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
+    {
+        await this.ProcessAsync(clientId, chatMessage.Type, chatMessage.Message.Split(' '), cancellationToken);
+    }
 }

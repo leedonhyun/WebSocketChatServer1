@@ -116,6 +116,11 @@ public class PrivateMessageCommandProcessor : BaseCommandProcessor
         }
     }
 
+    public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
+    {
+        await this.ProcessAsync(clientId, chatMessage.Type, new[] { chatMessage.ToUsername, chatMessage.Message }, cancellationToken);
+    }
+
     private async Task SendErrorMessage(string clientId, string errorMessage)
     {
         var error = new ChatMessage

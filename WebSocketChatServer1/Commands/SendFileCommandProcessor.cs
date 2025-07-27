@@ -125,7 +125,7 @@ public class SendFileCommandProcessor : BaseCommandProcessor
             Type = "fileOffer",
             Username = client.Username,
             Message = $"File shared in room: {fileName} ({fileSize} bytes)",
-            GroupId = roomId,
+            RoomId = roomId,
             ChatType = "room",
             Timestamp = DateTime.UtcNow
         };
@@ -196,5 +196,10 @@ public class SendFileCommandProcessor : BaseCommandProcessor
             Timestamp = DateTime.UtcNow
         };
         await _broadcaster.SendToClientAsync(clientId, error);
+    }
+
+    public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
+    {
+        await this.ProcessAsync(clientId, chatMessage.Type, chatMessage.Message.Split(' '), cancellationToken);
     }
 }

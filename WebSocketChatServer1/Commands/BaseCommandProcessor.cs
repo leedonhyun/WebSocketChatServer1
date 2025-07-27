@@ -3,6 +3,7 @@ using WebSocketChatServer1.Telemetry;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using WebSocketChatServer1.Models;
 
 namespace WebSocketChatServer1.Commands;
 public abstract class BaseCommandProcessor : ICommandProcessor
@@ -19,7 +20,10 @@ public abstract class BaseCommandProcessor : ICommandProcessor
     }
 
     public abstract Task<bool> CanProcessAsync(string command);
-    public abstract Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken);
+    public abstract Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default);
+
+
+    public abstract Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default);
 
     protected async Task LogCommandAsync(string clientId, string command, string[] args, double executionTimeMs = 0, bool success = true, string? errorMessage = null)
     {

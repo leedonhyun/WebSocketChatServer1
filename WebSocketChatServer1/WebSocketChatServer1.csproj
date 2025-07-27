@@ -21,7 +21,9 @@
     <Compile Remove="Commands\CreateGroupCommandProcessor.cs" />
     <Compile Remove="Commands\GroupChatCommandProcessor.cs" />
     <Compile Remove="Commands\JoinGroupCommandProcessor.cs" />
+    <Compile Remove="Interfaces\IConnectionManager.cs" />
     <Compile Remove="Interfaces\IGroupManager.cs" />
+    <Compile Remove="Interfaces\IRoomManager.cs" />
     <Compile Remove="Monitoring\ICommandLogger.cs" />
     <Compile Remove="Services\GroupManager.cs" />
     <Compile Remove="Services\MongoCommandLogger.cs" />

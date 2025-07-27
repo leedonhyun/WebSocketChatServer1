@@ -308,7 +308,8 @@ public class ChatServer
             {
                 var args = string.IsNullOrEmpty(message.Message)
                     ? Array.Empty<string>()
-                    : new[] { message.Message };
+                    //: new[] { message.Message };
+                    : message.Message.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 await processor.ProcessAsync(clientId, message.Type, args);
                 return;
             }
@@ -332,21 +333,12 @@ public class ChatServer
                     await privateMessageProcessor.ProcessAsync(clientId, "privateMessage", args);
                 }
                 break;
-            case "groupChat":
-                // 그룹 채팅은 GroupChatCommandProcessor에서 처리
-                var groupChatProcessor = _commandProcessors.FirstOrDefault(p => p.GetType().Name == "GroupChatCommandProcessor");
-                if (groupChatProcessor != null)
-                {
-                    var args = new[] { message.GroupId, message.Message };
-                    await groupChatProcessor.ProcessAsync(clientId, "groupChat", args);
-                }
-                break;
             case "roomChat":
                 // 룸 채팅도 GroupChatCommandProcessor에서 처리 (동일한 로직)
                 var roomChatProcessor = _commandProcessors.FirstOrDefault(p => p.GetType().Name == "GroupChatCommandProcessor");
                 if (roomChatProcessor != null)
                 {
-                    var args = new[] { message.GroupId, message.Message };
+                    var args = new[] { message.RoomId, message.Message };
                     await roomChatProcessor.ProcessAsync(clientId, "roomChat", args);
                 }
                 break;
@@ -355,7 +347,7 @@ public class ChatServer
                 var roomMessageProcessor = _commandProcessors.FirstOrDefault(p => p.GetType().Name == "RoomMessageCommandProcessor");
                 if (roomMessageProcessor != null)
                 {
-                    var args = new[] { message.GroupId, message.Message };
+                    var args = new[] { message.RoomId, message.Message };
                     await roomMessageProcessor.ProcessAsync(clientId, "roomMessage", args);
                 }
                 break;

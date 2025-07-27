@@ -9,5 +9,5 @@ public class ChatMessage : BaseMessage
     public string ToUsername { get; set; } = ""; // 1:1 채팅용
     public string[] ToUsernames { get; set; } = Array.Empty<string>(); // 1:N 채팅용
     public string ChatType { get; set; } = "public"; // "public", "private", "group"
-    public string GroupId { get; set; } = ""; // 그룹 채팅용 ID
+    public string RoomId { get; set; } = ""; // 그룹 채팅용 ID
 }

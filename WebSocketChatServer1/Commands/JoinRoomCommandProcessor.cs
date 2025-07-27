@@ -46,7 +46,7 @@ public class JoinRoomCommandProcessor : BaseCommandProcessor
         if (client == null) return;
 
         // Room ID 정리 (파이프 문자 제거)
-        var groupId = args[0].Trim('|', ' ');
+        var roomId = args[0].Trim('|', ' ');
         //var group = await _groupManager.GetGroupAsync(groupId);
 
         var isRoom = command.Equals("joinRoom", StringComparison.OrdinalIgnoreCase);
@@ -128,5 +128,10 @@ public class JoinRoomCommandProcessor : BaseCommandProcessor
         {
             await Task.WhenAll(tasks);
         }
+    }
+
+    public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
+    {
+        await this.ProcessAsync(clientId, chatMessage.Type, chatMessage.Message.Split(' '), cancellationToken);
     }
 }

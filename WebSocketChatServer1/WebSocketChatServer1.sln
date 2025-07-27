@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketChatServer1", "WebSocketChatServer1.csproj", "{5F6CF946-3667-08BE-0573-8FC566D712F8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketChatClient1", "..\..\WebSocketChatClient1\WebSocketChatClient1\WebSocketChatClient1.csproj", "{C620B618-D680-27DA-25CC-A4FC0866ED00}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{5F6CF946-3667-08BE-0573-8FC566D712F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F6CF946-3667-08BE-0573-8FC566D712F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F6CF946-3667-08BE-0573-8FC566D712F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C620B618-D680-27DA-25CC-A4FC0866ED00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C620B618-D680-27DA-25CC-A4FC0866ED00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C620B618-D680-27DA-25CC-A4FC0866ED00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C620B618-D680-27DA-25CC-A4FC0866ED00}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

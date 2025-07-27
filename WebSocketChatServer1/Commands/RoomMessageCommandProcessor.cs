@@ -55,7 +55,7 @@ public class RoomMessageCommandProcessor : BaseCommandProcessor
             Type = "roomMessage",
             Username = client.Username,
             Message = message,
-            GroupId = roomId,
+            RoomId = roomId,
             ChatType = "room",
             Timestamp = DateTime.UtcNow
         };
@@ -97,5 +97,10 @@ public class RoomMessageCommandProcessor : BaseCommandProcessor
         }
 
         Logger.LogInformation($"Room message sent to {tasks.Count} members in room {roomId}");
+    }
+
+    public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
+    {
+      await  this.ProcessAsync(clientId, chatMessage.Type, new[] { chatMessage.RoomId, chatMessage.Message }, cancellationToken);
     }
 }

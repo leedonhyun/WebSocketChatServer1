@@ -1,4 +1,4 @@
-﻿namespace ChatSystem.Models;
+﻿namespace WebSocketChatClient1.Models;
 public abstract class BaseMessage
 {
     public string Type { get; set; } = "";
