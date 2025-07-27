@@ -36,7 +36,7 @@ public class CreateGroupCommandProcessor : BaseCommandProcessor
             command.Equals("createRoom", StringComparison.OrdinalIgnoreCase));
     }
 
-    public override async Task ProcessAsync(string clientId, string command, string[] args)
+    public override async Task ProcessAsync(string clientId, string command, string[] args,CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var success = false;
@@ -85,7 +85,7 @@ public class CreateGroupCommandProcessor : BaseCommandProcessor
                 Timestamp = DateTime.UtcNow
             };
 
-            await _broadcaster.SendToClientAsync(clientId, response);
+            await _broadcaster.SendToClientAsync(clientId, response, cancellationToken);
             success = true;
         }
         finally

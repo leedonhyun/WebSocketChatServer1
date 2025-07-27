@@ -25,7 +25,7 @@ public class ChatMessageHandler : IMessageHandler<ChatMessage>
         _logger = logger;
     }
 
-    public async Task HandleAsync(string clientId, ChatMessage message)
+    public async Task HandleAsync(string clientId, ChatMessage message,CancellationToken cancellationToken)
     {
         var stopwatch = Stopwatch.StartNew();
         var success = true;
@@ -46,7 +46,7 @@ public class ChatMessageHandler : IMessageHandler<ChatMessage>
             message.Timestamp = DateTime.UtcNow;
 
             _logger.LogInformation($"Broadcasting message from {client.Username}: {message.Message}");
-            await _broadcaster.BroadcastAsync(message, clientId);
+            await _broadcaster.BroadcastAsync(message, clientId, cancellationToken);
         }
         catch (Exception ex)
         {

@@ -29,7 +29,7 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
         _logger = logger;
     }
 
-    public async Task HandleAsync(string clientId, FileTransferMessage message)
+    public async Task HandleAsync(string clientId, FileTransferMessage message, CancellationToken cancellationToken = default)
     {
         switch (message.Type)
         {
@@ -177,7 +177,7 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
     }
 
     // 다른 핸들러 메서드들도 유사하게 구현...
-    private async Task HandleFileUploadCompleteAsync(string clientId, FileTransferMessage message)
+    private async Task HandleFileUploadCompleteAsync(string clientId, FileTransferMessage message, CancellationToken cancellationToken = default)
     {
         if (message.FileInfo == null)
         {
@@ -215,7 +215,7 @@ public class FileTransferHandler : IMessageHandler<FileTransferMessage>
                 Message = $"{client.Username} uploaded file: {message.FileInfo.FileName} - ready for download",
                 Timestamp = DateTime.UtcNow
             };
-            await _broadcaster.BroadcastAsync(systemMessage);
+            await _broadcaster.BroadcastAsync(systemMessage, clientId, cancellationToken);
         }
         else
         {

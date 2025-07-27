@@ -29,7 +29,7 @@ public class RoomMessageCommandProcessor : BaseCommandProcessor
         return await Task.FromResult(command.Equals("roomMessage", StringComparison.OrdinalIgnoreCase));
     }
 
-    public override async Task ProcessAsync(string clientId, string command, string[] args)
+    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default)
     {
         if (args.Length < 2)
         {

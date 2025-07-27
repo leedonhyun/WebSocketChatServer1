@@ -15,42 +15,45 @@ using WebSocketChatServer1.Interfaces;
 
 namespace WebSocketChatServer1.Services;
 
-public class RedisMessageBroadcaster : IMessageBroadcaster
+public class RedisMessageBroadcaster : IMessageBroadcaster, IDisposable
 {
     private readonly ISubscriber _redisSubscriber;
     private readonly IDatabase _redisDatabase; // 클라이언트-서버 매핑을 위한 Redis DB
     private readonly ConcurrentDictionary<string, IClientConnection> _localConnections = new();
     private readonly IClientManager _clientManager; // 클라이언트 정보 조회를 위함 (분산 버전)
+    private readonly IGroupManager _groupManager;
     private readonly ILogger<RedisMessageBroadcaster> _logger;
     private readonly ITelemetryService _telemetry;
-
+    private readonly CancellationTokenSource _cts = new();
     // Redis Pub/Sub 채널 이름
     private const string ChatChannel = "chat_messages";
     private const string PrivateMessageChannelPrefix = "private_message:"; // 개인 메시지 채널 프리픽스
-
+    private const string RoomPrefix = "ROOM:";
     public RedisMessageBroadcaster(
         IConnectionMultiplexer redis,
         IClientManager clientManager, // DistributedClientManager 주입
+        IGroupManager groupManager,
         ILogger<RedisMessageBroadcaster> logger,
         ITelemetryService telemetry)
     {
         _redisSubscriber = redis.GetSubscriber();
         _redisDatabase = redis.GetDatabase();
         _clientManager = clientManager;
+        _groupManager = groupManager;
         _logger = logger;
         _telemetry = telemetry;
 
         // 모든 RedisMessageBroadcaster 인스턴스는 'ChatChannel'을 구독하여 전체 브로드캐스트 메시지를 수신
         _redisSubscriber.Subscribe(RedisChannel.Literal(ChatChannel), async (channel, messageJson) =>
         {
-            await HandleReceivedBroadcastMessage(messageJson.ToString());
+            await HandleReceivedBroadcastMessage(messageJson.ToString(), _cts.Token);
         });
 
         // 각 서버 인스턴스 고유의 개인 메시지 채널을 구독
         // 이 서버 인스턴스에 연결된 특정 클라이언트에게 보낼 메시지가 여기에 들어옴.
         _redisSubscriber.Subscribe(RedisChannel.Literal($"{PrivateMessageChannelPrefix}{Environment.MachineName}"), async (channel, messageJson) =>
         {
-            await HandleReceivedPrivateMessage(messageJson.ToString());
+            await HandleReceivedPrivateMessage(messageJson.ToString(), _cts.Token);
         });
     }
 
@@ -101,7 +104,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
     }
 
     // 전체 브로드캐스트 메시지
-    public async Task BroadcastAsync<T>(T message, string? excludeClientId = null) where T : BaseMessage
+    public async Task BroadcastAsync<T>(T message, string? excludeClientId = null, CancellationToken cancellationToken = default) where T : BaseMessage
     {
         using var activity = ChatTelemetry.StartActivity("RedisMessageBroadcaster.Broadcast");
         activity?.SetTag("chat.message.type", message.Type);
@@ -126,7 +129,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
                 // 연결이 유효한지 확인 후 전송
                 if (kvp.Value.IsConnected)
                 {
-                    localSendTasks.Add(kvp.Value.SendAsync(message));
+                    localSendTasks.Add(kvp.Value.SendAsync(message, cancellationToken));
                     localClientCount++;
                 }
                 else
@@ -156,7 +159,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
     }
 
     // 특정 클라이언트 ID에게 메시지 전송
-    public async Task SendToClientAsync<T>(string clientId, T message) where T : BaseMessage
+    public async Task SendToClientAsync<T>(string clientId, T message, CancellationToken cancellationToken = default) where T : BaseMessage
     {
         using var activity = ChatTelemetry.StartActivity("RedisMessageBroadcaster.SendToClient");
         activity?.SetTag("chat.client.id", clientId);
@@ -173,7 +176,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
             if (_localConnections.TryGetValue(clientId, out var connection) && connection.IsConnected)
             {
                 _logger.LogDebug($"Sending message directly to local client: {clientId}");
-                await connection.SendAsync(message);
+                await connection.SendAsync(message, cancellationToken);
                 activity?.SetTag("chat.delivery.method", "local");
             }
             else
@@ -210,13 +213,38 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
         }
     }
 
-    // 특정 사용자 이름에게 메시지 전송
-    public async Task SendToUsernameAsync<T>(string username, T message) where T : BaseMessage
+    public async Task SendToGroupAsync<T>(string groupId, T message, string? excludeUsername = null, CancellationToken cancellationToken = default) where T : BaseMessage
     {
-        // ROOM: 접두사가 있는 username은 무시
-        if (username.StartsWith("ROOM:", StringComparison.OrdinalIgnoreCase))
+        var members = await _groupManager.GetGroupMembersAsync(groupId);
+        if (members == null || !members.Any())
         {
-            _logger.LogDebug($"Skipping message to room identifier: {username}");
+            _logger.LogWarning($"Attempted to send message to empty or non-existent group: {groupId}");
+            return;
+        }
+
+        var allClients = await _clientManager.GetAllClientsAsync();
+        var memberClients = allClients
+            .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
+            .ToList();
+
+        var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
+        await Task.WhenAll(tasks);
+
+        _logger.LogInformation($"Message sent to group {groupId} with {memberClients.Count} members.");
+    }
+
+    // 특정 사용자 이름에게 메시지 전송
+    public async Task SendToUsernameAsync<T>(string username, T message, CancellationToken cancellationToken = default) where T : BaseMessage
+    {
+        if (username.StartsWith(RoomPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var groupId = username[RoomPrefix.Length..];
+            string? excludeUsername = null;
+            if (message is ChatMessage chatMessage)
+            {
+                excludeUsername = chatMessage.Username;
+            }
+            await SendToGroupAsync(groupId, message, excludeUsername, cancellationToken);
             return;
         }
 
@@ -227,7 +255,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
 
         if (targetClient != null)
         {
-            await SendToClientAsync(targetClient.Id, message);
+            await SendToClientAsync(targetClient.Id, message, cancellationToken);
         }
         else
         {
@@ -236,7 +264,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
     }
 
     // Redis Pub/Sub으로 전체 브로드캐스트 메시지 수신 시 처리
-    private async Task HandleReceivedBroadcastMessage(string messageJson)
+    private async Task HandleReceivedBroadcastMessage(string messageJson, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -249,6 +277,9 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
             // 메시지 타입에 따라 적절한 구체 타입으로 역직렬화
             switch (messageType)
             {
+
+                case "system":
+                case "chat":
                 case "ChatMessage":
                     message = JsonSerializer.Deserialize<ChatMessage>(messageJson);
                     break;
@@ -276,7 +307,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
                 // 이 예시에서는 모든 수신 메시지를 로컬 클라이언트에 다시 전송하는 것으로 단순화.
                 if (kvp.Value.IsConnected)
                 {
-                    localSendTasks.Add(kvp.Value.SendAsync(message));
+                    localSendTasks.Add(kvp.Value.SendAsync(message, cancellationToken));
                 }
                 else
                 {
@@ -293,7 +324,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
     }
 
     // Redis Pub/Sub으로 특정 서버 인스턴스 대상 개인 메시지 수신 시 처리
-    private async Task HandleReceivedPrivateMessage(string envelopeJson)
+    private async Task HandleReceivedPrivateMessage(string envelopeJson, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -333,7 +364,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
 
                 if (message != null)
                 {
-                    await connection.SendAsync(message);
+                    await connection.SendAsync(message, cancellationToken);
                 }
             }
             else
@@ -346,6 +377,36 @@ public class RedisMessageBroadcaster : IMessageBroadcaster
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing received private message from Redis.");
+        }
+    }
+
+    public void Dispose()
+    {
+        _logger.LogInformation("Shutting down RedisMessageBroadcaster and cleaning up connections...");
+        if (!_cts.IsCancellationRequested)
+        {
+            _cts.Cancel();
+        }
+        _cts.Dispose();
+
+        // Get all client IDs connected to this instance and unregister them
+        var localClientIds = _localConnections.Keys.ToList();
+        _logger.LogInformation("Unregistering {Count} local connections.", localClientIds.Count);
+
+        foreach (var clientId in localClientIds)
+        {
+            UnregisterConnection(clientId);
+        }
+
+        try
+        {
+            // Unsubscribe from all channels
+            _redisSubscriber.UnsubscribeAll();
+            _logger.LogInformation("Unsubscribed from all Redis Pub/Sub channels.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to unsubscribe from Redis channels during shutdown.");
         }
     }
 }

@@ -31,7 +31,7 @@ public class GroupChatCommandProcessor : BaseCommandProcessor
             command.Equals("roomChat", StringComparison.OrdinalIgnoreCase));
     }
 
-    public override async Task ProcessAsync(string clientId, string command, string[] args)
+    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken)
     {
         if (args.Length < 2)
         {
@@ -69,7 +69,7 @@ public class GroupChatCommandProcessor : BaseCommandProcessor
         };
 
         // 그룹 멤버들에게 메시지 전송
-        await BroadcastToGroupMembers(groupId, groupMessage);
+        await BroadcastToGroupMembers(groupId, groupMessage, cancellationToken);
     }
 
     private async Task SendErrorMessage(string clientId, string errorMessage)
@@ -84,7 +84,7 @@ public class GroupChatCommandProcessor : BaseCommandProcessor
         await _broadcaster.SendToClientAsync(clientId, error);
     }
 
-    private async Task BroadcastToGroupMembers(string groupId, ChatMessage message)
+    private async Task BroadcastToGroupMembers(string groupId, ChatMessage message, CancellationToken cancellationToken)
     {
         var members = await _groupManager.GetGroupMembersAsync(groupId);
         var clients = await ClientManager.GetAllClientsAsync();
@@ -95,7 +95,7 @@ public class GroupChatCommandProcessor : BaseCommandProcessor
             var memberClient = clients.FirstOrDefault(c => c.Username == member);
             if (memberClient != null)
             {
-                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message));
+                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message, cancellationToken));
             }
         }
 

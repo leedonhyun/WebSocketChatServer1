@@ -26,7 +26,7 @@ public class UserListCommandProcessor : BaseCommandProcessor
         return await Task.FromResult(command.Equals("listUsers", StringComparison.OrdinalIgnoreCase));
     }
 
-    public override async Task ProcessAsync(string clientId, string command, string[] args)
+    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var success = false;
@@ -48,7 +48,7 @@ public class UserListCommandProcessor : BaseCommandProcessor
                 Timestamp = DateTime.UtcNow
             };
 
-            await _broadcaster.SendToClientAsync(clientId, userListMessage);
+            await _broadcaster.SendToClientAsync(clientId, userListMessage, cancellationToken);
             success = true;
         }
         catch (Exception ex)

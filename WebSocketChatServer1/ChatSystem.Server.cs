@@ -1,46 +1,69 @@
-﻿using WebSocketChatServer1.Interfaces;
-using WebSocketChatServer1.Models;
-
-using Nerdbank.Streams;
+﻿using Nerdbank.Streams;
 
 using System.Buffers;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 
+using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Models;
 using WebSocketChatServer1.Services;
+using WebSocketChatServer1.Telemetry;
 
 namespace WebSocketChatServer1.Server;
 
 public class ChatServer
 {
-    private readonly IClientManager _clientManager;
-    private readonly IMessageBroadcaster _broadcaster;
-    private readonly IMessageHandler<ChatMessage> _chatHandler;
-    private readonly IMessageHandler<FileTransferMessage> _fileHandler;
-    private readonly IEnumerable<ICommandProcessor> _commandProcessors;
-    private readonly IServiceProvider _serviceProvider;
+    //private readonly IClientManager _clientManager;
+    //private readonly IMessageBroadcaster _broadcaster;
+    //private readonly IMessageHandler<ChatMessage> _chatHandler;
+    //private readonly IMessageHandler<FileTransferMessage> _fileHandler;
+    //private readonly IEnumerable<ICommandProcessor> _commandProcessors;
+    //private readonly IServiceProvider _serviceProvider;
+    //private readonly ILogger<ChatServer> _logger;
     private readonly ILogger<ChatServer> _logger;
+    private readonly IClientManager _clientManager;
+    private readonly IGroupManager _groupManager;
+    private readonly IMessageBroadcaster _messageBroadcaster;
+    private readonly IFileStorageService _fileStorageService;
+    private readonly IFileTransferStateService _fileTransferStateService;
+    private readonly IEnumerable<ICommandProcessor> _commandProcessors;
+    private readonly IMessageHandler<ChatMessage> _chatMessageHandler;
+    private readonly IMessageHandler<FileTransferMessage> _fileTransferHandler;
+    private readonly ICommandLogger _commandLogger;
+    private readonly ITelemetryService _telemetry;
+    private readonly IServiceProvider _serviceProvider;
 
     public ChatServer(
-        IClientManager clientManager,
-        IMessageBroadcaster broadcaster,
-        IMessageHandler<ChatMessage> chatHandler,
-        IMessageHandler<FileTransferMessage> fileHandler,
-        IEnumerable<ICommandProcessor> commandProcessors,
         IServiceProvider serviceProvider,
-        ILogger<ChatServer> logger)
+        ILogger<ChatServer> logger,
+        IClientManager clientManager,
+        IGroupManager groupManager,
+        IMessageBroadcaster messageBroadcaster,
+        IFileStorageService fileStorageService,
+        IFileTransferStateService fileTransferStateService,
+        IEnumerable<ICommandProcessor> commandProcessors,
+        IMessageHandler<ChatMessage> chatMessageHandler,
+        IMessageHandler<FileTransferMessage> fileTransferHandler,
+        ICommandLogger commandLogger,
+        ITelemetryService telemetry)
     {
-        _clientManager = clientManager;
-        _broadcaster = broadcaster;
-        _chatHandler = chatHandler;
-        _fileHandler = fileHandler;
-        _commandProcessors = commandProcessors;
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _clientManager = clientManager;
+        _groupManager = groupManager;
+        _messageBroadcaster = messageBroadcaster;
+        _fileStorageService = fileStorageService;
+        _fileTransferStateService = fileTransferStateService;
+        _commandProcessors = commandProcessors;
+        _chatMessageHandler = chatMessageHandler;
+        _fileTransferHandler = fileTransferHandler;
+        _commandLogger = commandLogger;
+        _telemetry = telemetry;
     }
 
-    public async Task HandleWebSocketAsync(HttpContext context, WebSocket webSocket)
+    public async Task HandleWebSocketAsync(HttpContext context, WebSocket webSocket, CancellationToken cancellationToken)
+    //public async Task HandleWebSocketAsync(HttpContext context, WebSocket webSocket)
     {
         var clientId = Guid.NewGuid().ToString();
         var client = new Client
@@ -54,27 +77,28 @@ public class ChatServer
         try
         {
             await _clientManager.AddClientAsync(clientId, client);
+            var (multiplexingStream, messageChannel, fileChannel) = await CreateMultiplexedChannelsAsync(webSocket, cancellationToken);
 
             // WebSocket을 Stream으로 변환
             var stream = webSocket.AsStream();
 
             // MultiplexingStream 생성
-            var multiplexingStream = await MultiplexingStream.CreateAsync(
-                stream,
-                new MultiplexingStream.Options
-                {
-                    TraceSource = new System.Diagnostics.TraceSource("ChatServer")
-                },
-                CancellationToken.None);
+            //var multiplexingStream = await MultiplexingStream.CreateAsync(
+            //    stream,
+            //    new MultiplexingStream.Options
+            //    {
+            //        TraceSource = new System.Diagnostics.TraceSource("ChatServer")
+            //    },
+            //    CancellationToken.None);
 
             // 채널 생성
-            var messageChannelTask = multiplexingStream.AcceptChannelAsync("messages", CancellationToken.None);
-            var fileChannelTask = multiplexingStream.AcceptChannelAsync("files", CancellationToken.None);
+            //var messageChannelTask = multiplexingStream.AcceptChannelAsync("messages", CancellationToken.None);
+            //var fileChannelTask = multiplexingStream.AcceptChannelAsync("files", CancellationToken.None);
 
-            await Task.WhenAll(messageChannelTask, fileChannelTask);
+            //await Task.WhenAll(messageChannelTask, fileChannelTask);
 
-            var messageChannel = await messageChannelTask;
-            var fileChannel = await fileChannelTask;
+            //var messageChannel = await messageChannelTask;
+            //var fileChannel = await fileChannelTask;
 
             // 연결 등록
             var connection = new WebSocketClientConnection(
@@ -82,10 +106,10 @@ public class ChatServer
                 fileChannel,
                 _serviceProvider.GetRequiredService<ILogger<WebSocketClientConnection>>());
 
-            if (_broadcaster is IMessageBroadcaster broadcaster)
-            {
-                broadcaster.RegisterConnection(clientId, connection);
-            }
+            //if (_messageBroadcaster is IMessageBroadcaster broadcaster)
+            //{
+            _messageBroadcaster.RegisterConnection(clientId, connection);
+            //}
 
             _logger.LogInformation($"Client {clientId} ({client.Username}) connected successfully");
 
@@ -98,14 +122,14 @@ public class ChatServer
                 Timestamp = DateTime.UtcNow
             };
 
-            await _broadcaster.SendToClientAsync(clientId, welcomeMessage);
+            await _messageBroadcaster.SendToClientAsync(clientId, welcomeMessage);
 
             // 메시지 수신 처리 시작
             var messageTask = Task.Run(async () =>
             {
                 try
                 {
-                    await HandleMessagesAsync(clientId, messageChannel);
+                    await HandleMessagesAsync(clientId, messageChannel, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -117,7 +141,7 @@ public class ChatServer
             {
                 try
                 {
-                    await HandleFileTransferAsync(clientId, fileChannel);
+                    await HandleFileTransferAsync(clientId, fileChannel, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -138,7 +162,7 @@ public class ChatServer
             // 정리
             await _clientManager.RemoveClientAsync(clientId);
 
-            if (_broadcaster is IMessageBroadcaster broadcaster)
+            if (_messageBroadcaster is IMessageBroadcaster broadcaster)
             {
                 broadcaster.UnregisterConnection(clientId);
             }
@@ -152,22 +176,41 @@ public class ChatServer
                 Timestamp = DateTime.UtcNow
             };
 
-            await _broadcaster.BroadcastAsync(leaveMessage, clientId);
+            await _messageBroadcaster.BroadcastAsync(leaveMessage, clientId);
 
             _logger.LogInformation($"Client {clientId} ({client.Username}) disconnected");
         }
     }
+    private async Task<(MultiplexingStream stream, MultiplexingStream.Channel messageChannel, MultiplexingStream.Channel fileChannel)> CreateMultiplexedChannelsAsync(WebSocket webSocket, CancellationToken cancellationToken)
+    {
+        var stream = webSocket.AsStream();
+        var multiplexingStream = await MultiplexingStream.CreateAsync(
+            stream,
+            new MultiplexingStream.Options { TraceSource = new System.Diagnostics.TraceSource("ChatServer") },
+            cancellationToken);
 
-    private async Task HandleMessagesAsync(string clientId, MultiplexingStream.Channel channel)
+        var messageChannelTask = multiplexingStream.AcceptChannelAsync("messages", cancellationToken);
+        var fileChannelTask = multiplexingStream.AcceptChannelAsync("files", cancellationToken);
+
+        await Task.WhenAll(messageChannelTask, fileChannelTask);
+
+        return (multiplexingStream, await messageChannelTask, await fileChannelTask);
+    }
+
+    private async Task HandleMessagesAsync(string clientId, MultiplexingStream.Channel channel, CancellationToken cancellationToken)
     {
         var messageBuffer = new StringBuilder();
 
         try
         {
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                var result = await channel.Input.ReadAsync();
-                if (result.IsCompleted) break;
+                var result = await channel.Input.ReadAsync(cancellationToken);
+                if (result.IsCompleted || result.IsCanceled)
+                {
+                    _logger.LogInformation("Message channel closed for client {ClientId}", clientId);
+                    break;
+                }
 
                 var receivedText = Encoding.UTF8.GetString(result.Buffer.ToArray());
                 channel.Input.AdvanceTo(result.Buffer.End);
@@ -190,7 +233,7 @@ public class ChatServer
                             if (chatMessage != null)
                             {
                                 _logger.LogDebug($"Received message from {clientId}: {chatMessage.Message}");
-                                await ProcessChatMessageAsync(clientId, chatMessage);
+                                await ProcessChatMessageAsync(clientId, chatMessage, cancellationToken);
                             }
                         }
                         catch (JsonException ex)
@@ -207,7 +250,7 @@ public class ChatServer
         }
     }
 
-    private async Task HandleFileTransferAsync(string clientId, MultiplexingStream.Channel channel)
+    private async Task HandleFileTransferAsync(string clientId, MultiplexingStream.Channel channel, CancellationToken cancellationToken = default)
     {
         var messageBuffer = new StringBuilder();
 
@@ -239,7 +282,7 @@ public class ChatServer
                             if (fileMessage != null)
                             {
                                 _logger.LogDebug($"Received file message from {clientId}: {fileMessage.Type}");
-                                await _fileHandler.HandleAsync(clientId, fileMessage);
+                                await _fileTransferHandler.HandleAsync(clientId, fileMessage, cancellationToken);
                             }
                         }
                         catch (JsonException ex)
@@ -256,7 +299,7 @@ public class ChatServer
         }
     }
 
-    private async Task ProcessChatMessageAsync(string clientId, ChatMessage message)
+    private async Task ProcessChatMessageAsync(string clientId, ChatMessage message, CancellationToken cancellationToken)
     {
         // 명령어 처리
         foreach (var processor in _commandProcessors)
@@ -275,10 +318,10 @@ public class ChatServer
         switch (message.Type)
         {
             case "chat":
-                await _chatHandler.HandleAsync(clientId, message);
+                await _chatMessageHandler.HandleAsync(clientId, message, cancellationToken);
                 break;
             case "privateChat":
-                await HandlePrivateChatAsync(clientId, message);
+                await HandlePrivateChatAsync(clientId, message, cancellationToken);
                 break;
             case "privateMessage":
                 // privateMessage는 PrivateMessageCommandProcessor에서 처리
@@ -332,7 +375,7 @@ public class ChatServer
         }
     }
 
-    private async Task HandlePrivateChatAsync(string clientId, ChatMessage message)
+    private async Task HandlePrivateChatAsync(string clientId, ChatMessage message, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(message.ToUsername))
         {
@@ -359,7 +402,7 @@ public class ChatServer
         message.Timestamp = DateTime.UtcNow;
 
         // 수신자에게 메시지 전송
-        await _broadcaster.SendToClientAsync(targetClient.Id, message);
+        await _messageBroadcaster.SendToClientAsync(targetClient.Id, message, cancellationToken);
 
         // 송신자에게 확인 메시지 전송
         var confirmMessage = new ChatMessage
@@ -371,7 +414,7 @@ public class ChatServer
             ChatType = "private",
             Timestamp = message.Timestamp
         };
-        await _broadcaster.SendToClientAsync(clientId, confirmMessage);
+        await _messageBroadcaster.SendToClientAsync(clientId, confirmMessage, cancellationToken);
 
         _logger.LogInformation($"Private message sent from {sender.Username} to {message.ToUsername}");
     }
@@ -385,6 +428,7 @@ public class ChatServer
             Message = errorMessage,
             Timestamp = DateTime.UtcNow
         };
-        await _broadcaster.SendToClientAsync(clientId, error);
+        await _messageBroadcaster.SendToClientAsync(clientId, error);
     }
+
 }

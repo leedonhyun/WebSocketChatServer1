@@ -31,7 +31,7 @@ public class PrivateMessageCommandProcessor : BaseCommandProcessor
             command.Equals("dm", StringComparison.OrdinalIgnoreCase));
     }
 
-    public override async Task ProcessAsync(string clientId, string command, string[] args)
+    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var success = false;
@@ -87,7 +87,7 @@ public class PrivateMessageCommandProcessor : BaseCommandProcessor
             };
 
             // 수신자에게 메시지 전송
-            await _broadcaster.SendToClientAsync(targetClient.Id, privateMessage);
+            await _broadcaster.SendToClientAsync(targetClient.Id, privateMessage, cancellationToken);
 
             // 송신자에게 확인 메시지 전송
             var confirmMessage = new ChatMessage
@@ -99,7 +99,7 @@ public class PrivateMessageCommandProcessor : BaseCommandProcessor
                 ChatType = "private",
                 Timestamp = DateTime.UtcNow
             };
-            await _broadcaster.SendToClientAsync(clientId, confirmMessage);
+            await _broadcaster.SendToClientAsync(clientId, confirmMessage, cancellationToken);
 
             // 개인 메시지 메트릭 기록
             ChatTelemetry.PrivateMessagesTotal.Add(1,

@@ -33,7 +33,7 @@ public class SendFileCommandProcessor : BaseCommandProcessor
         return await Task.FromResult(command.Equals("send", StringComparison.OrdinalIgnoreCase));
     }
 
-    public override async Task ProcessAsync(string clientId, string command, string[] args)
+    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default)
     {
         if (args.Length < 1)
         {
@@ -59,13 +59,13 @@ public class SendFileCommandProcessor : BaseCommandProcessor
         try
         {
             // 파일을 서버에 저장
-            var fileData = await File.ReadAllBytesAsync(filePath);
+            var fileData = await File.ReadAllBytesAsync(filePath, cancellationToken);
             var savedPath = await _fileStorage.SaveFileAsync(fileId, fileName, fileData);
 
             if (args.Length == 1)
             {
                 // 전체 브로드캐스트
-                await BroadcastFileOffer(clientId, fileId, fileName, fileData.Length, null);
+                await BroadcastFileOffer(clientId, fileId, fileName, fileData.Length, null, cancellationToken);
             }
             else
             {
@@ -75,12 +75,12 @@ public class SendFileCommandProcessor : BaseCommandProcessor
                 if (Guid.TryParse(target, out _))
                 {
                     // Room에 파일 전송
-                    await SendFileToRoom(clientId, fileId, fileName, fileData.Length, target);
+                    await SendFileToRoom(clientId, fileId, fileName, fileData.Length, target, cancellationToken);
                 }
                 else
                 {
                     // 사용자에게 파일 전송
-                    await SendFileToUser(clientId, fileId, fileName, fileData.Length, target);
+                    await SendFileToUser(clientId, fileId, fileName, fileData.Length, target, cancellationToken);
                 }
             }
         }
@@ -91,7 +91,7 @@ public class SendFileCommandProcessor : BaseCommandProcessor
         }
     }
 
-    private async Task BroadcastFileOffer(string senderId, string fileId, string fileName, long fileSize, string? excludeUsername)
+    private async Task BroadcastFileOffer(string senderId, string fileId, string fileName, long fileSize, string? excludeUsername, CancellationToken cancellationToken = default)
     {
         var message = new ChatMessage
         {
@@ -101,10 +101,10 @@ public class SendFileCommandProcessor : BaseCommandProcessor
             Timestamp = DateTime.UtcNow
         };
 
-        await _broadcaster.BroadcastAsync(message, senderId);
+        await _broadcaster.BroadcastAsync(message, senderId, cancellationToken);
     }
 
-    private async Task SendFileToRoom(string senderId, string fileId, string fileName, long fileSize, string roomId)
+    private async Task SendFileToRoom(string senderId, string fileId, string fileName, long fileSize, string roomId, CancellationToken cancellationToken = default)
     {
         var client = await ClientManager.GetClientAsync(senderId);
         if (client == null) return;
@@ -138,7 +138,7 @@ public class SendFileCommandProcessor : BaseCommandProcessor
             var memberClient = clients.FirstOrDefault(c => c.Username == member);
             if (memberClient != null)
             {
-                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message));
+                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message, cancellationToken));
             }
         }
 
@@ -150,7 +150,7 @@ public class SendFileCommandProcessor : BaseCommandProcessor
         Logger.LogInformation($"File {fileName} offered to {tasks.Count} members in room {roomId}");
     }
 
-    private async Task SendFileToUser(string senderId, string fileId, string fileName, long fileSize, string targetUsername)
+    private async Task SendFileToUser(string senderId, string fileId, string fileName, long fileSize, string targetUsername, CancellationToken cancellationToken = default)
     {
         var client = await ClientManager.GetClientAsync(senderId);
         if (client == null) return;
@@ -182,7 +182,7 @@ public class SendFileCommandProcessor : BaseCommandProcessor
             Timestamp = DateTime.UtcNow
         };
 
-        await _broadcaster.SendToClientAsync(targetClient.Id, message);
+        await _broadcaster.SendToClientAsync(targetClient.Id, message, cancellationToken);
         Logger.LogInformation($"File {fileName} offered to user {targetUsername}");
     }
 

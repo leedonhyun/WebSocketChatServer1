@@ -32,7 +32,7 @@ public class UsernameCommandProcessor : BaseCommandProcessor
         return await Task.FromResult(command.Equals("setUsername", StringComparison.OrdinalIgnoreCase));
     }
 
-    public override async Task ProcessAsync(string clientId, string command, string[] args)
+    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var success = false;
@@ -67,7 +67,7 @@ public class UsernameCommandProcessor : BaseCommandProcessor
                     Message = errorMessage,
                     Timestamp = DateTime.UtcNow
                 };
-                await _broadcaster.SendToClientAsync(clientId, error);
+                await _broadcaster.SendToClientAsync(clientId, error, cancellationToken);
                 return;
             }
 
@@ -83,7 +83,7 @@ public class UsernameCommandProcessor : BaseCommandProcessor
                     Message = errorMessage,
                     Timestamp = DateTime.UtcNow
                 };
-                await _broadcaster.SendToClientAsync(clientId, error);
+                await _broadcaster.SendToClientAsync(clientId, error, cancellationToken);
                 return;
             }
 
@@ -104,7 +104,7 @@ public class UsernameCommandProcessor : BaseCommandProcessor
                 Timestamp = DateTime.UtcNow
             };
 
-            await _broadcaster.BroadcastAsync(systemMessage, clientId);
+            await _broadcaster.BroadcastAsync(systemMessage, clientId, cancellationToken);
             success = true;
         }
         finally

@@ -1,13 +1,15 @@
-using WebSocketChatServer1.Interfaces;
-using WebSocketChatServer1.Models;
-using WebSocketChatServer1.Telemetry;
-
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
 
 using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Interfaces;
+using WebSocketChatServer1.Models;
+using WebSocketChatServer1.Telemetry;
+
+using IGroupManager = WebSocketChatServer1.Interfaces.IGroupManager;
 
 namespace WebSocketChatServer1.Services;
 
@@ -17,10 +19,11 @@ public class MessageBroadcaster : IMessageBroadcaster
     private readonly ConcurrentDictionary<string, IClientConnection> _connections = new();
     private readonly ILogger<MessageBroadcaster> _logger;
     private readonly ITelemetryService _telemetry;
-
-    public MessageBroadcaster(IClientManager clientManager, ILogger<MessageBroadcaster> logger, ITelemetryService telemetry)
+    private readonly IGroupManager _groupManager;
+    public MessageBroadcaster(IClientManager clientManager, IGroupManager groupManager, ILogger<MessageBroadcaster> logger, ITelemetryService telemetry)
     {
         _clientManager = clientManager;
+        _groupManager = groupManager;
         _logger = logger;
         _telemetry = telemetry;
     }
@@ -41,7 +44,7 @@ public class MessageBroadcaster : IMessageBroadcaster
         _logger.LogDebug($"Connection unregistered for client: {clientId}");
     }
 
-    public async Task BroadcastAsync<T>(T message, string? excludeClientId = null) where T : BaseMessage
+    public async Task BroadcastAsync<T>(T message, string? excludeClientId = null, CancellationToken cancellationToken = default) where T : BaseMessage
     {
         using var activity = ChatTelemetry.StartBroadcastActivity(_connections.Count, message.Type);
         var stopwatch = Stopwatch.StartNew();
@@ -64,7 +67,7 @@ public class MessageBroadcaster : IMessageBroadcaster
                 {
                     try
                     {
-                        await connection.SendAsync(message);
+                        await connection.SendAsync(message, cancellationToken);
                     }
                     catch (Exception ex)
                     {
@@ -93,13 +96,13 @@ public class MessageBroadcaster : IMessageBroadcaster
         }
     }
 
-    public async Task SendToClientAsync<T>(string clientId, T message) where T : BaseMessage
+    public async Task SendToClientAsync<T>(string clientId, T message, CancellationToken cancellationToken) where T : BaseMessage
     {
         if (_connections.TryGetValue(clientId, out var connection))
         {
             try
             {
-                await connection.SendAsync(message);
+                await connection.SendAsync(message, cancellationToken);
                 _logger.LogDebug($"Message sent to client: {clientId}");
             }
             catch (Exception ex)
@@ -114,7 +117,7 @@ public class MessageBroadcaster : IMessageBroadcaster
         }
     }
 
-    public async Task SendToUsernameAsync<T>(string username, T message) where T : BaseMessage
+    public async Task SendToUsernameAsync<T>(string username, T message, CancellationToken cancellationToken) where T : BaseMessage
     {
         // ROOM: 접두사가 있는 username은 무시
         if (username.StartsWith("ROOM:", StringComparison.OrdinalIgnoreCase))
@@ -129,11 +132,32 @@ public class MessageBroadcaster : IMessageBroadcaster
 
         if (targetClient != null)
         {
-            await SendToClientAsync(targetClient.Id, message);
+            await SendToClientAsync(targetClient.Id, message, cancellationToken);
         }
         else
         {
             _logger.LogWarning($"Client with username '{username}' not found");
         }
+    }
+
+    public async Task SendToGroupAsync<T>(string groupId, T message, string? excludeUsername = null, CancellationToken cancellationToken = default) where T : BaseMessage
+    {
+        var members = await _groupManager.GetGroupMembersAsync(groupId);
+        if (members == null || !members.Any())
+        {
+            _logger.LogWarning($"Attempted to send message to empty or non-existent group: {groupId}");
+            return;
+        }
+
+        var allClients = await _clientManager.GetAllClientsAsync();
+        var memberClients = allClients
+            .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
+            .ToList();
+
+        var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
+        await Task.WhenAll(tasks);
+
+
+        _logger.LogInformation($"Message sent to group {groupId} with {memberClients.Count} members.");
     }
 }

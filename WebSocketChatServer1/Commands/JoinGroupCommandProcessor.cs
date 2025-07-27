@@ -32,7 +32,7 @@ public class JoinGroupCommandProcessor : BaseCommandProcessor
             command.Equals("joinRoom", StringComparison.OrdinalIgnoreCase));
     }
 
-    public override async Task ProcessAsync(string clientId, string command, string[] args)
+    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken)
     {
         if (args.Length == 0)
         {
@@ -82,7 +82,7 @@ public class JoinGroupCommandProcessor : BaseCommandProcessor
             Timestamp = DateTime.UtcNow
         };
 
-        await _broadcaster.SendToClientAsync(clientId, response);
+        await _broadcaster.SendToClientAsync(clientId, response, cancellationToken);
 
         // 그룹 멤버들에게 새 멤버 알림
         await BroadcastToGroupMembers(groupId, new ChatMessage
@@ -108,7 +108,7 @@ public class JoinGroupCommandProcessor : BaseCommandProcessor
         await _broadcaster.SendToClientAsync(clientId, error);
     }
 
-    private async Task BroadcastToGroupMembers(string groupId, ChatMessage message, string? excludeUsername = null)
+    private async Task BroadcastToGroupMembers(string groupId, ChatMessage message, string? excludeUsername = null, CancellationToken  cancellationToken = default)
     {
         var members = await _groupManager.GetGroupMembersAsync(groupId);
         var clients = await ClientManager.GetAllClientsAsync();
@@ -119,7 +119,7 @@ public class JoinGroupCommandProcessor : BaseCommandProcessor
             var memberClient = clients.FirstOrDefault(c => c.Username == member);
             if (memberClient != null)
             {
-                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message));
+                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message, cancellationToken));
             }
         }
 

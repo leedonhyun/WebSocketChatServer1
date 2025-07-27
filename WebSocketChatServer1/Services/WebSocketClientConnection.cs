@@ -31,7 +31,7 @@ public class WebSocketClientConnection : IClientConnection
         _logger = logger;
     }
 
-    public async Task SendAsync<T>(T message) where T : BaseMessage
+    public async Task SendAsync<T>(T message, CancellationToken cancellationToken) where T : BaseMessage
     {
         try
         {
@@ -45,8 +45,8 @@ public class WebSocketClientConnection : IClientConnection
             var json = JsonSerializer.Serialize(message);
             var buffer = Encoding.UTF8.GetBytes(json + "\n");
 
-            await channel.Output.WriteAsync(buffer.AsMemory());
-            await channel.Output.FlushAsync();
+            await channel.Output.WriteAsync(buffer.AsMemory(), cancellationToken);
+            await channel.Output.FlushAsync(cancellationToken);
         }
         catch (Exception ex)
         {
