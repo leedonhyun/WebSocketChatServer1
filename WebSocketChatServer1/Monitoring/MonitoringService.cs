@@ -144,7 +144,7 @@ public class MonitoringService : IMonitoringService
         {
             Timestamp = now,
             CurrentActiveConnections = latestMetrics?.ActiveConnections ?? 0,
-            CurrentActiveGroups = latestMetrics?.ActiveGroups ?? 0,
+            CurrentActiveGroups = latestMetrics?.ActiveRooms ?? 0,
             TotalCommandsToday = todayCommands,
             TotalErrorsToday = todayErrors,
             ErrorRate = todayCommands > 0 ? (double)todayErrors / todayCommands : 0,

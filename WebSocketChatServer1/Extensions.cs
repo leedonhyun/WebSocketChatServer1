@@ -207,7 +207,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ITelemetryService, TelemetryService>();
 
         // services.AddSingleton<IClientManager, ClientManager>();
-        //services.AddSingleton<IGroupManager, GroupManager>(); // 그룹 관리자 추가
+        services.AddSingleton<IRoomManager, RoomManager>(); // room 관리자 추가
         services.AddSingleton<IFileStorageService, FileStorageService>();
         // services.AddSingleton<IMessageBroadcaster, MessageBroadcaster>();
 
@@ -225,7 +225,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandProcessor, UsernameCommandProcessor>();
         services.AddScoped<ICommandProcessor, UserListCommandProcessor>();
         services.AddScoped<ICommandProcessor, PrivateMessageCommandProcessor>(); // 개인 메시지
-        //services.AddScoped<ICommandProcessor, CreateGroupCommandProcessor>(); // 그룹 생성
+        services.AddScoped<ICommandProcessor, CreateRoomCommandProcessor>(); // room 생성
         services.AddScoped<ICommandProcessor, JoinRoomCommandProcessor>(); // 그룹 참가
         //services.AddScoped<ICommandProcessor, GroupChatCommandProcessor>(); // 그룹 채팅
         services.AddScoped<ICommandProcessor, RoomMessageCommandProcessor>(); // 룸 메시지

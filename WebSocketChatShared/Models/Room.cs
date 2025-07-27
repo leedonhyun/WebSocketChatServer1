@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace WebSocketChatShared.Models;
 
-public class Group
+public class Room
 {
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";

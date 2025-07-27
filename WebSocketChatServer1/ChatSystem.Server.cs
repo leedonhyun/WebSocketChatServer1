@@ -333,15 +333,15 @@ public class ChatServer
                     await privateMessageProcessor.ProcessAsync(clientId, "privateMessage", args);
                 }
                 break;
-            case "roomChat":
-                // 룸 채팅도 GroupChatCommandProcessor에서 처리 (동일한 로직)
-                var roomChatProcessor = _commandProcessors.FirstOrDefault(p => p.GetType().Name == "GroupChatCommandProcessor");
-                if (roomChatProcessor != null)
-                {
-                    var args = new[] { message.RoomId, message.Message };
-                    await roomChatProcessor.ProcessAsync(clientId, "roomChat", args);
-                }
-                break;
+            //case "roomChat":
+            //    // 룸 채팅도 GroupChatCommandProcessor에서 처리 (동일한 로직)
+            //    var roomChatProcessor = _commandProcessors.FirstOrDefault(p => p.GetType().Name == "RoomMessageCommandProcessor");
+            //    if (roomChatProcessor != null)
+            //    {
+            //        var args = new[] { message.RoomId, message.Message };
+            //        await roomChatProcessor.ProcessAsync(clientId, "roomChat", args);
+            //    }
+            //    break;
             case "roomMessage":
                 // roomMessage는 RoomMessageCommandProcessor에서 처리
                 var roomMessageProcessor = _commandProcessors.FirstOrDefault(p => p.GetType().Name == "RoomMessageCommandProcessor");

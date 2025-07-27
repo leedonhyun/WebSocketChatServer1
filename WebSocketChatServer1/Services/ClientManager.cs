@@ -71,25 +71,28 @@ public class ClientManager : IClientManager
         return await Task.FromResult(clients);
     }
 
-    public async Task UpdateClientUsernameAsync(string clientId, string newUsername)
+    public async Task<string> UpdateClientUserNameAsync(string clientId, string newUsername)
     {
         using var activity = ChatTelemetry.StartActivity("ClientManager.UpdateClientUsernameAsync");
         activity?.SetTag("chat.client.id", clientId);
         activity?.SetTag("chat.client.new_username", newUsername);
 
+        string oldUserName = string.Empty;
+
         if (_clients.TryGetValue(clientId, out var client))
         {
-            var oldUsername = client.Username;
+            oldUserName = client.Username;
             client.Username = newUsername;
 
-            activity?.SetTag("chat.client.old_username", oldUsername);
-            _logger.LogInformation($"Client {clientId} username changed: {oldUsername} ¡æ {newUsername}");
+            activity?.SetTag("chat.client.old_username", oldUserName);
+            _logger.LogInformation($"Client {clientId} username changed: {oldUserName} ¡æ {newUsername}");
         }
         else
         {
             activity?.SetTag("chat.client.found", false);
         }
 
-        await Task.CompletedTask;
+        return oldUserName;
+        //await Task.CompletedTask;
     }
 }

@@ -10,5 +10,5 @@ public interface IClientManager
     Task RemoveClientAsync(string clientId);
     Task<Client?> GetClientAsync(string clientId);
     Task<IEnumerable<Client>> GetAllClientsAsync();
-    Task UpdateClientUsernameAsync(string clientId, string newUsername);
+    Task<string> UpdateClientUserNameAsync(string clientId, string newUsername);
 }

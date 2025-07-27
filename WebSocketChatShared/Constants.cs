@@ -23,7 +23,7 @@ public static class ChatConstants
         public const string FileOfferAuto = "fileOfferAuto";
         public const string FileAccept = "fileAccept";
         public const string FileReject = "fileReject";
-        public const string SetUsername = "setUsername";
+        public const string SetUserName = "setUsername";
         public const string ListUsers = "listUsers";
         public const string CreateRoom = "createRoom";
         public const string JoinRoom = "joinRoom";
@@ -43,6 +43,7 @@ public static class ChatConstants
         public const string FileError = "fileError";
         public const string FileData = "fileData";
         public const string FileComplete = "fileComplete";
+        public const string Error = "error";
     }
 
     /// <summary>
@@ -180,6 +181,8 @@ public static class ChatConstants
         "  /accept <fileId> - Accept incoming file",
         "  /reject <fileId> - Reject incoming file"
     };
+
+    public static string SystemUsername = "system";
 
     /// <summary>
     /// Constants specific to the Console UI.

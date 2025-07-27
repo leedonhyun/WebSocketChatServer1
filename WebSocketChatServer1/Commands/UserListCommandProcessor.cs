@@ -1,4 +1,5 @@
 using WebSocketChatServer1.Interfaces;
+using WebSocketChatShared;
 using WebSocketChatShared.Models;
 using Microsoft.Extensions.Logging;
 using System;
@@ -6,64 +7,63 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace WebSocketChatServer1.Commands;
-
-public class UserListCommandProcessor : BaseCommandProcessor
+namespace WebSocketChatServer1.Commands
 {
-    private readonly IMessageBroadcaster _broadcaster;
-
-    public UserListCommandProcessor(
-        IClientManager clientManager,
-        IMessageBroadcaster broadcaster,
-        ICommandLogger commandLogger,
-        ILogger<UserListCommandProcessor> logger) : base(clientManager, commandLogger, logger)
+    public class UserListCommandProcessor : BaseCommandProcessor
     {
-        _broadcaster = broadcaster;
-    }
+        private readonly IMessageBroadcaster _broadcaster;
 
-    public override async Task<bool> CanProcessAsync(string command)
-    {
-        return await Task.FromResult(command.Equals("listUsers", StringComparison.OrdinalIgnoreCase));
-    }
-
-    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        var success = false;
-        string? errorMessage = null;
-
-        try
+        public UserListCommandProcessor(
+            IClientManager clientManager,
+            IMessageBroadcaster broadcaster,
+            ICommandLogger commandLogger,
+            ILogger<UserListCommandProcessor> logger) : base(clientManager, commandLogger, logger)
         {
-            var clients = await ClientManager.GetAllClientsAsync();
-            // ROOM: 접두사가 있는 사용자 제외
-            var usernames = clients
-                .Where(c => !c.Username.StartsWith("ROOM:", StringComparison.OrdinalIgnoreCase))
-                .Select(c => c.Username)
-                .ToList();
+            _broadcaster = broadcaster;
+        }
 
-            var userListMessage = new ChatMessage
+        public override Task<bool> CanProcessAsync(string command)
+        {
+            return Task.FromResult(command.Equals(ChatConstants.MessageTypes.ListUsers, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var success = false;
+            string? errorMessage = null;
+
+            try
             {
-                Type = "userList",
-                Message = string.Join(",", usernames),
-                Timestamp = DateTime.UtcNow
-            };
+                var clients = await ClientManager.GetAllClientsAsync();
+                var userList = string.Join(", ", clients.Select(c => c.Username));
 
-            await _broadcaster.SendToClientAsync(clientId, userListMessage, cancellationToken);
-            success = true;
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-        }
-        finally
-        {
-            stopwatch.Stop();
-            await LogCommandAsync(clientId, command, args, stopwatch.Elapsed.TotalMilliseconds, success, errorMessage);
-        }
-    }
+                var message = new ChatMessage
+                {
+                    Type = ChatConstants.MessageTypes.System,
+                    Username = ChatConstants.SystemUsername,
+                    Message = $"Online users: {userList}",
+                    Timestamp = DateTime.UtcNow
+                };
 
-    public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
-    {
-        await this.ProcessAsync(clientId, chatMessage.Message, Array.Empty<string>(), cancellationToken);
+                await _broadcaster.SendToClientAsync(clientId, message, cancellationToken);
+                success = true;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+                Logger.LogError(ex, "Error processing user list command");
+            }
+            finally
+            {
+                stopwatch.Stop();
+                await LogCommandAsync(clientId, command, args, stopwatch.Elapsed.TotalMilliseconds, success, errorMessage);
+            }
+        }
+
+        public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
+        {
+            await ProcessAsync(clientId, chatMessage.Type, Array.Empty<string>(), cancellationToken);
+        }
     }
 }

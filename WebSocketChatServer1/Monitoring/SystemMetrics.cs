@@ -17,8 +17,8 @@ public class SystemMetrics
     [BsonElement("activeConnections")]
     public int ActiveConnections { get; set; }
 
-    [BsonElement("activeGroups")]
-    public int ActiveGroups { get; set; }
+    [BsonElement("activeRooms")]
+    public int ActiveRooms { get; set; }
 
     [BsonElement("totalMessages")]
     public long TotalMessages { get; set; }

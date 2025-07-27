@@ -31,10 +31,10 @@ public class NullCommandLogger : ICommandLogger
         await Task.CompletedTask;
     }
 
-    public async Task LogSystemMetricsAsync(int activeConnections, int activeGroups,
+    public async Task LogSystemMetricsAsync(int activeConnections, int activeRooms,
         long totalMessages, long totalFiles, long totalErrors)
     {
-        _logger.LogDebug($"System metrics logging skipped - MongoDB unavailable. Connections: {activeConnections}, Groups: {activeGroups}");
+        _logger.LogDebug($"System metrics logging skipped - MongoDB unavailable. Connections: {activeConnections}, Groups: {activeRooms}");
         await Task.CompletedTask;
     }
 }

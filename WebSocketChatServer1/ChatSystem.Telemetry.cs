@@ -192,13 +192,13 @@ public static class ChatTelemetry
     }
 
     /// <summary>그룹 작업 Activity 시작</summary>
-    //public static Activity? StartGroupOperationActivity(string operation, string groupId)
-    //{
-    //    var activity = ActivitySource.StartActivity(ActivityGroupOperation);
-    //    activity?.SetTag("websocket.group.operation", operation);
-    //    activity?.SetTag("websocket.group.id", groupId);
-    //    return activity;
-    //}
+    public static Activity? StartRoomOperationActivity(string operation, string roomId)
+    {
+        var activity = ActivitySource.StartActivity(ActivityGroupOperation);
+        activity?.SetTag("websocket.room.operation", operation);
+        activity?.SetTag("websocket.room.id", roomId);
+        return activity;
+    }
 
     /// <summary>브로드캐스트 Activity 시작</summary>
     public static Activity? StartBroadcastActivity(int recipientCount, string messageType)

@@ -9,6 +9,6 @@ public interface ICommandLogger
     object? parameters, bool success, double executionTimeMs,
     string? errorMessage = null, object? responseData = null);
 
-    Task LogSystemMetricsAsync(int activeConnections, int activeGroups,
+    Task LogSystemMetricsAsync(int activeConnections, int activeRooms,
         long totalMessages, long totalFiles, long totalErrors);
 }

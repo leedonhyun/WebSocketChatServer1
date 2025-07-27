@@ -1,6 +1,6 @@
 using WebSocketChatServer1.Interfaces;
+using WebSocketChatShared;
 using WebSocketChatShared.Models;
-using WebSocketChatServer1.Services;
 using WebSocketChatServer1.Telemetry;
 using Microsoft.Extensions.Logging;
 using System;
@@ -8,115 +8,86 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using WebSocketChatServer1.Commands;
 
-namespace WebSocketChatServer1.Commands;
-
-public class UsernameCommandProcessor : BaseCommandProcessor
+namespace WebSocketChatServer1.Commands
 {
-    private readonly IMessageBroadcaster _broadcaster;
-    private readonly IUserActivityService _userActivityService;
-
-    public UsernameCommandProcessor(
-        IClientManager clientManager,
-        ICommandLogger commandLogger,
-        IMessageBroadcaster broadcaster,
-        IUserActivityService userActivityService,
-        ILogger<UsernameCommandProcessor> logger) : base(clientManager, commandLogger, logger)
+    public class UsernameCommandProcessor : BaseCommandProcessor
     {
-        _broadcaster = broadcaster;
-        _userActivityService = userActivityService;
-    }
+        private readonly IMessageBroadcaster _broadcaster;
 
-    public override async Task<bool> CanProcessAsync(string command)
-    {
-        return await Task.FromResult(command.Equals("setUsername", StringComparison.OrdinalIgnoreCase));
-    }
-
-    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        var success = false;
-        string? errorMessage = null;
-
-        try
+        public UsernameCommandProcessor(
+            IClientManager clientManager,
+            IMessageBroadcaster broadcaster,
+            ICommandLogger commandLogger,
+            ILogger<UsernameCommandProcessor> logger) : base(clientManager, commandLogger, logger)
         {
-            if (args.Length == 0)
-            {
-                errorMessage = "Username is required";
-                return;
-            }
+            _broadcaster = broadcaster;
+        }
 
-            var client = await ClientManager.GetClientAsync(clientId);
-            if (client == null)
-            {
-                errorMessage = "Client not found";
-                return;
-            }
+        public override Task<bool> CanProcessAsync(string command)
+        {
+            return Task.FromResult(command.Equals(ChatConstants.MessageTypes.SetUserName, StringComparison.OrdinalIgnoreCase));
+        }
 
-            var oldUsername = client.Username;
-            var newUsername = string.Join(" ", args);
+        public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken = default)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var success = false;
+            string? errorMessage = null;
 
-            // Username 검증 (ROOM: 접두사 금지)
-            if (newUsername.StartsWith("ROOM:", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                errorMessage = "Username cannot start with 'ROOM:' - this prefix is reserved for room identifiers";
-                var error = new ChatMessage
+                if (args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
                 {
-                    Type = "error",
-                    Username = "System",
-                    Message = errorMessage,
-                    Timestamp = DateTime.UtcNow
-                };
-                await _broadcaster.SendToClientAsync(clientId, error, cancellationToken);
-                return;
-            }
+                    errorMessage = "Username cannot be empty";
+                    await SendErrorMessage(clientId, errorMessage);
+                    return;
+                }
 
-            // 중복 username 검증
-            var allClients = await ClientManager.GetAllClientsAsync();
-            if (allClients.Any(c => c.Id != clientId && c.Username.Equals(newUsername, StringComparison.OrdinalIgnoreCase)))
-            {
-                errorMessage = $"Username '{newUsername}' is already taken";
-                var error = new ChatMessage
+                var newUsername = args[0];
+                var oldUsername = await ClientManager.UpdateClientUserNameAsync(clientId, newUsername);
+
+                if (oldUsername != null)
                 {
-                    Type = "error",
-                    Username = "System",
-                    Message = errorMessage,
-                    Timestamp = DateTime.UtcNow
-                };
-                await _broadcaster.SendToClientAsync(clientId, error, cancellationToken);
-                return;
+                    var notification = new ChatMessage
+                    {
+                        Type = ChatConstants.MessageTypes.System,
+                        Username = ChatConstants.SystemUsername,
+                        Message = $"{oldUsername} is now known as {newUsername}",
+                        Timestamp = DateTime.UtcNow
+                    };
+                    await _broadcaster.BroadcastAsync(notification);
+                    Logger.LogInformation($"User {clientId} changed username from {oldUsername} to {newUsername}");
+                    success = true;
+                }
+                else
+                {
+                    errorMessage = "Failed to update username";
+                    await SendErrorMessage(clientId, errorMessage);
+                }
             }
-
-            await ClientManager.UpdateClientUsernameAsync(clientId, newUsername);
-
-            // 사용자 이름 변경 활동 로그
-            await _userActivityService.LogUsernameChangedAsync(clientId, oldUsername, newUsername);
-
-            // 사용자명 변경 메트릭 기록
-            ChatTelemetry.UsernameChangesTotal.Add(1,
-                new KeyValuePair<string, object?>("old.username", oldUsername),
-                new KeyValuePair<string, object?>("new.username", newUsername));
-
-            var systemMessage = new ChatMessage
+            finally
             {
-                Type = "system",
-                Message = $"{oldUsername} changed name to {newUsername}",
+                stopwatch.Stop();
+                await LogCommandAsync(clientId, command, args, stopwatch.Elapsed.TotalMilliseconds, success, errorMessage);
+            }
+        }
+
+        public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
+        {
+            await ProcessAsync(clientId, chatMessage.Type, new[] { chatMessage.Message }, cancellationToken);
+        }
+
+        private async Task SendErrorMessage(string clientId, string errorMessage)
+        {
+            var error = new ChatMessage
+            {
+                Type = ChatConstants.MessageTypes.Error,
+                Username = ChatConstants.SystemUsername,
+                Message = errorMessage,
                 Timestamp = DateTime.UtcNow
             };
-
-            await _broadcaster.BroadcastAsync(systemMessage, clientId, cancellationToken);
-            success = true;
+            await _broadcaster.SendToClientAsync(clientId, error);
         }
-        finally
-        {
-            stopwatch.Stop();
-            await LogCommandAsync(clientId, command, args, stopwatch.Elapsed.TotalMilliseconds, success, errorMessage);
-        }
-    }
-
-    public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
-    {
-        await this.ProcessAsync(clientId, chatMessage.Type, chatMessage.Message.Split(' '), cancellationToken);
     }
 }

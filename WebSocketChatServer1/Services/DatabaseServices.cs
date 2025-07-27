@@ -49,7 +49,7 @@ public class EfCoreCommandLogger : ICommandLogger
         throw new NotImplementedException();
     }
 
-    public Task LogSystemMetricsAsync(int activeConnections, int activeGroups, long totalMessages, long totalFiles, long totalErrors)
+    public Task LogSystemMetricsAsync(int activeConnections, int activeRooms, long totalMessages, long totalFiles, long totalErrors)
     {
         throw new NotImplementedException();
     }

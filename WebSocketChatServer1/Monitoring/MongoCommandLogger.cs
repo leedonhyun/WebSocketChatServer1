@@ -89,7 +89,7 @@ public class MongoCommandLogger : ICommandLogger
         }
     }
 
-    public async Task LogSystemMetricsAsync(int activeConnections, int activeGroups,
+    public async Task LogSystemMetricsAsync(int activeConnections, int activeRooms,
         long totalMessages, long totalFiles, long totalErrors)
     {
         try
@@ -97,7 +97,7 @@ public class MongoCommandLogger : ICommandLogger
             var metrics = new SystemMetrics
             {
                 ActiveConnections = activeConnections,
-                ActiveGroups = activeGroups,
+                ActiveRooms = activeRooms,
                 TotalMessages = totalMessages,
                 TotalFiles = totalFiles,
                 TotalErrors = totalErrors

@@ -159,23 +159,25 @@ public class DistributedClientManager : IClientManager
         }
     }
 
-    public async Task UpdateClientUsernameAsync(string clientId, string newUsername)
+    public async Task<string> UpdateClientUserNameAsync(string clientId, string newUsername)
     {
         using var activity = ChatTelemetry.StartActivity("DistributedClientManager.UpdateClientUsername");
         activity?.SetTag("chat.client.id", clientId);
         activity?.SetTag("chat.client.new_username", newUsername);
 
+        string oldUserName = string.Empty;
         try
         {
+
             var client = await GetClientAsync(clientId);
             if (client != null)
             {
-                var oldUsername = client.Username;
+                oldUserName = client.Username;
                 client.Username = newUsername;
                 await AddClientAsync(clientId, client); // 업데이트된 정보로 다시 저장 (Set은 유지)
 
-                activity?.SetTag("chat.client.old_username", oldUsername);
-                _logger.LogInformation($"Client {clientId} username changed: {oldUsername} → {newUsername} in distributed manager.");
+                activity?.SetTag("chat.client.old_username", oldUserName);
+                _logger.LogInformation($"Client {clientId} username changed: {oldUserName} → {newUsername} in distributed manager.");
             }
             else
             {
@@ -188,5 +190,6 @@ public class DistributedClientManager : IClientManager
             _logger.LogError(ex, "Failed to update username for client {ClientId}", clientId);
             throw;
         }
+        return oldUserName;
     }
 }
