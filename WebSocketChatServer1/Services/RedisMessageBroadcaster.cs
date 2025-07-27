@@ -21,7 +21,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster, IDisposable
     private readonly IDatabase _redisDatabase; // 클라이언트-서버 매핑을 위한 Redis DB
     private readonly ConcurrentDictionary<string, IClientConnection> _localConnections = new();
     private readonly IClientManager _clientManager; // 클라이언트 정보 조회를 위함 (분산 버전)
-    private readonly IGroupManager _groupManager;
+    //private readonly IGroupManager _groupManager;
     private readonly ILogger<RedisMessageBroadcaster> _logger;
     private readonly ITelemetryService _telemetry;
     private readonly CancellationTokenSource _cts = new();
@@ -32,14 +32,14 @@ public class RedisMessageBroadcaster : IMessageBroadcaster, IDisposable
     public RedisMessageBroadcaster(
         IConnectionMultiplexer redis,
         IClientManager clientManager, // DistributedClientManager 주입
-        IGroupManager groupManager,
+        //IGroupManager groupManager,
         ILogger<RedisMessageBroadcaster> logger,
         ITelemetryService telemetry)
     {
         _redisSubscriber = redis.GetSubscriber();
         _redisDatabase = redis.GetDatabase();
         _clientManager = clientManager;
-        _groupManager = groupManager;
+        //_groupManager = groupManager;
         _logger = logger;
         _telemetry = telemetry;
 
@@ -215,22 +215,22 @@ public class RedisMessageBroadcaster : IMessageBroadcaster, IDisposable
 
     public async Task SendToGroupAsync<T>(string groupId, T message, string? excludeUsername = null, CancellationToken cancellationToken = default) where T : BaseMessage
     {
-        var members = await _groupManager.GetGroupMembersAsync(groupId);
-        if (members == null || !members.Any())
-        {
-            _logger.LogWarning($"Attempted to send message to empty or non-existent group: {groupId}");
-            return;
-        }
+        //var members = await _groupManager.GetGroupMembersAsync(groupId);
+        //if (members == null || !members.Any())
+        //{
+        //    _logger.LogWarning($"Attempted to send message to empty or non-existent group: {groupId}");
+        //    return;
+        //}
 
-        var allClients = await _clientManager.GetAllClientsAsync();
-        var memberClients = allClients
-            .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
-            .ToList();
+        //var allClients = await _clientManager.GetAllClientsAsync();
+        //var memberClients = allClients
+        //    .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
+        //    .ToList();
 
-        var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
-        await Task.WhenAll(tasks);
+        //var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
+        //await Task.WhenAll(tasks);
 
-        _logger.LogInformation($"Message sent to group {groupId} with {memberClients.Count} members.");
+        //_logger.LogInformation($"Message sent to group {groupId} with {memberClients.Count} members.");
     }
 
     // 특정 사용자 이름에게 메시지 전송

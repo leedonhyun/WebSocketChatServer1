@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ChatSystem.Commands;
+namespace WebSocketChatServer1.Commands;
 
 public class PrivateMessageCommandProcessor : BaseCommandProcessor
 {

@@ -6,21 +6,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ChatSystem.Commands;
+namespace WebSocketChatServer1.Commands;
 
 public class RoomMessageCommandProcessor : BaseCommandProcessor
 {
-    private readonly IGroupManager _groupManager;
+    //private readonly IGroupManager _groupManager;
     private readonly IMessageBroadcaster _broadcaster;
 
     public RoomMessageCommandProcessor(
         IClientManager clientManager,
-        IGroupManager groupManager,
+        //IGroupManager groupManager,
         IMessageBroadcaster broadcaster,
         ICommandLogger commandLogger,
         ILogger<RoomMessageCommandProcessor> logger) : base(clientManager, commandLogger, logger)
     {
-        _groupManager = groupManager;
+        //_groupManager = groupManager;
         _broadcaster = broadcaster;
     }
 
@@ -44,11 +44,11 @@ public class RoomMessageCommandProcessor : BaseCommandProcessor
         var roomId = args[0].Trim('|', ' ');
         var message = string.Join(" ", args.Skip(1));
 
-        if (!await _groupManager.IsGroupMemberAsync(roomId, client.Username))
-        {
-            await SendErrorMessage(clientId, $"You are not a member of room '{roomId}'");
-            return;
-        }
+        //if (!await _groupManager.IsGroupMemberAsync(roomId, client.Username))
+        //{
+        //    await SendErrorMessage(clientId, $"You are not a member of room '{roomId}'");
+        //    return;
+        //}
 
         var roomMessage = new ChatMessage
         {
@@ -78,18 +78,18 @@ public class RoomMessageCommandProcessor : BaseCommandProcessor
 
     private async Task BroadcastToRoomMembers(string roomId, ChatMessage message)
     {
-        var members = await _groupManager.GetGroupMembersAsync(roomId);
+        //var members = await _groupManager.GetGroupMembersAsync(roomId);
         var clients = await ClientManager.GetAllClientsAsync();
 
         var tasks = new List<Task>();
-        foreach (var member in members)
-        {
-            var memberClient = clients.FirstOrDefault(c => c.Username == member);
-            if (memberClient != null)
-            {
-                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message));
-            }
-        }
+        //foreach (var member in members)
+        //{
+        //    var memberClient = clients.FirstOrDefault(c => c.Username == member);
+        //    if (memberClient != null)
+        //    {
+        //        tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message));
+        //    }
+        //}
 
         if (tasks.Count > 0)
         {

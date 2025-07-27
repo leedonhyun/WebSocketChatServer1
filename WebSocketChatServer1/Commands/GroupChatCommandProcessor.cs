@@ -1,109 +1,83 @@
+
 using WebSocketChatServer1.Interfaces;
 using WebSocketChatServer1.Models;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ChatSystem.Commands;
+namespace WebSocketChatServer1.Commands;
 
-public class GroupChatCommandProcessor : BaseCommandProcessor
+public class GroupChatCommandProcessor : ICommandProcessor
 {
-    private readonly IGroupManager _groupManager;
     private readonly IMessageBroadcaster _broadcaster;
+    private readonly IGroupManager _groupManager;
+    private readonly IClientManager _clientManager;
+    private readonly ILogger<GroupChatCommandProcessor> _logger;
 
     public GroupChatCommandProcessor(
-        IClientManager clientManager,
-        IGroupManager groupManager,
         IMessageBroadcaster broadcaster,
-        ICommandLogger commandLogger,
-        ILogger<GroupChatCommandProcessor> logger) : base(clientManager, commandLogger, logger)
+        IGroupManager groupManager,
+        IClientManager clientManager,
+        ILogger<GroupChatCommandProcessor> logger)
     {
-        _groupManager = groupManager;
         _broadcaster = broadcaster;
+        _groupManager = groupManager;
+        _clientManager = clientManager;
+        _logger = logger;
     }
 
-    public override async Task<bool> CanProcessAsync(string command)
+    public string Command => "/groupchat";
+
+    public Task<bool> CanProcessAsync(string command)
     {
-        return await Task.FromResult(
-            command.Equals("groupChat", StringComparison.OrdinalIgnoreCase) ||
-            command.Equals("roomChat", StringComparison.OrdinalIgnoreCase));
+        throw new NotImplementedException();
     }
 
-    public override async Task ProcessAsync(string clientId, string command, string[] args, CancellationToken cancellationToken)
+    public async Task ProcessAsync(string clientId,string command, string[] args, CancellationToken cancellationToken = default)
     {
-        if (args.Length < 2)
+        var client = await _clientManager.GetClientAsync(clientId);
+        if (client == null)
         {
-            var entityName = command.Equals("roomChat", StringComparison.OrdinalIgnoreCase) ? "room" : "group";
-            await SendErrorMessage(clientId, $"Usage: {command} <{entityName}Id> <message>\nExample: {command} abc-123 Hello everyone!");
+            _logger.LogWarning("Client not found for ID: {ClientId}", clientId);
             return;
         }
 
-        var client = await ClientManager.GetClientAsync(clientId);
-        if (client == null) return;
-
-        // Group/Room ID 정리 (파이프 문자 제거)
-        var groupId = args[0].Trim('|', ' ');
-        var message = string.Join(" ", args.Skip(1));
-
-        if (!await _groupManager.IsGroupMemberAsync(groupId, client.Username))
+        var parts = args?.Split(' ', 2);
+        if (parts == null || parts.Length < 2)
         {
-            var entityName = command.Equals("roomChat", StringComparison.OrdinalIgnoreCase) ? "room" : "group";
-            await SendErrorMessage(clientId, $"You are not a member of {entityName} '{groupId}'");
-            return;
-        }
-
-        var isRoom = command.Equals("roomChat", StringComparison.OrdinalIgnoreCase);
-        var messageType = isRoom ? "roomChat" : "groupChat";
-        var chatType = isRoom ? "room" : "group";
-
-        var groupMessage = new ChatMessage
-        {
-            Type = messageType,
-            Username = client.Username,
-            Message = message,
-            GroupId = groupId,
-            ChatType = chatType,
-            Timestamp = DateTime.UtcNow
-        };
-
-        // 그룹 멤버들에게 메시지 전송
-        await BroadcastToGroupMembers(groupId, groupMessage, cancellationToken);
-    }
-
-    private async Task SendErrorMessage(string clientId, string errorMessage)
-    {
-        var error = new ChatMessage
-        {
-            Type = "error",
-            Username = "System",
-            Message = errorMessage,
-            Timestamp = DateTime.UtcNow
-        };
-        await _broadcaster.SendToClientAsync(clientId, error);
-    }
-
-    private async Task BroadcastToGroupMembers(string groupId, ChatMessage message, CancellationToken cancellationToken)
-    {
-        var members = await _groupManager.GetGroupMembersAsync(groupId);
-        var clients = await ClientManager.GetAllClientsAsync();
-
-        var tasks = new List<Task>();
-        foreach (var member in members)
-        {
-            var memberClient = clients.FirstOrDefault(c => c.Username == member);
-            if (memberClient != null)
+            await _broadcaster.SendToClientAsync(clientId, new ChatMessage
             {
-                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message, cancellationToken));
-            }
+                Type = "error",
+                Username = "System",
+                Message = "Usage: /groupchat <group_id> <message>"
+            });
+            return;
         }
 
-        if (tasks.Count > 0)
+        var groupId = parts[0];
+        var messageContent = parts[1];
+
+        var isMember = await _groupManager.IsGroupMemberAsync(groupId, client.Username);
+        if (!isMember)
         {
-            await Task.WhenAll(tasks);
+            await _broadcaster.SendToClientAsync(clientId, new ChatMessage
+            {
+                Type = "error",
+                Username = "System",
+                Message = "You are not a member of this group."
+            }, cancellationToken);
+            return;
         }
 
-        Logger.LogInformation($"Group message sent to {tasks.Count} members in group {groupId}");
+        var message = new ChatMessage
+        {
+            Type = "chat",
+            ChatType = "group",
+            Username = client.Username,
+            Message = messageContent,
+            GroupId = groupId,
+            Timestamp = DateTime.UtcNow
+        };
+
+        // Send to all members of the group, excluding the sender
+        await _broadcaster.SendToGroupAsync(groupId, message, client.Username, cancellationToken);
+        _logger.LogInformation("User {Username} sent a message to group {GroupId}", client.Username, groupId);
     }
 }

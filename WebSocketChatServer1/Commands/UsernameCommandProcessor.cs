@@ -8,8 +8,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using WebSocketChatServer1.Commands;
 
-namespace ChatSystem.Commands;
+namespace WebSocketChatServer1.Commands;
 
 public class UsernameCommandProcessor : BaseCommandProcessor
 {

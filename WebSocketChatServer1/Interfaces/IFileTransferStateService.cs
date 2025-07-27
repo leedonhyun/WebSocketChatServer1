@@ -1,9 +1,11 @@
-// (Add this to your interfaces file)
 using WebSocketChatServer1.Models;
 
-public interface IFileTransferStateService
+namespace WebSocketChatServer1.Interfaces
 {
-    bool TryAddTransfer(string fileId, FileTransferInfo fileInfo);
-    bool TryGetTransfer(string fileId, out FileTransferInfo? fileInfo);
-    bool TryRemoveTransfer(string fileId);
+    public interface IFileTransferStateService
+    {
+        void AddOrUpdateTransferState(string fileId, FileTransferState state);
+        FileTransferState GetTransferState(string fileId);
+        void RemoveTransferState(string fileId);
+    }
 }

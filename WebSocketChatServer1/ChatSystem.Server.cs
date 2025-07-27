@@ -23,7 +23,7 @@ public class ChatServer
     //private readonly ILogger<ChatServer> _logger;
     private readonly ILogger<ChatServer> _logger;
     private readonly IClientManager _clientManager;
-    private readonly IGroupManager _groupManager;
+    //private readonly IGroupManager _groupManager;
     private readonly IMessageBroadcaster _messageBroadcaster;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFileTransferStateService _fileTransferStateService;
@@ -38,7 +38,7 @@ public class ChatServer
         IServiceProvider serviceProvider,
         ILogger<ChatServer> logger,
         IClientManager clientManager,
-        IGroupManager groupManager,
+        //IGroupManager groupManager,
         IMessageBroadcaster messageBroadcaster,
         IFileStorageService fileStorageService,
         IFileTransferStateService fileTransferStateService,
@@ -51,7 +51,7 @@ public class ChatServer
         _serviceProvider = serviceProvider;
         _logger = logger;
         _clientManager = clientManager;
-        _groupManager = groupManager;
+        //_groupManager = groupManager;
         _messageBroadcaster = messageBroadcaster;
         _fileStorageService = fileStorageService;
         _fileTransferStateService = fileTransferStateService;

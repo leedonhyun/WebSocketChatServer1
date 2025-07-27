@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace ChatSystem.Commands;
+namespace WebSocketChatServer1.Commands;
 public abstract class BaseCommandProcessor : ICommandProcessor
 {
     protected readonly IClientManager ClientManager;

@@ -9,7 +9,7 @@ using WebSocketChatServer1.Interfaces;
 using WebSocketChatServer1.Models;
 using WebSocketChatServer1.Telemetry;
 
-using IGroupManager = WebSocketChatServer1.Interfaces.IGroupManager;
+//using IGroupManager = WebSocketChatServer1.Interfaces.IGroupManager;
 
 namespace WebSocketChatServer1.Services;
 
@@ -142,22 +142,22 @@ public class MessageBroadcaster : IMessageBroadcaster
 
     public async Task SendToGroupAsync<T>(string groupId, T message, string? excludeUsername = null, CancellationToken cancellationToken = default) where T : BaseMessage
     {
-        var members = await _groupManager.GetGroupMembersAsync(groupId);
-        if (members == null || !members.Any())
-        {
-            _logger.LogWarning($"Attempted to send message to empty or non-existent group: {groupId}");
-            return;
-        }
+        //var members = await _groupManager.GetGroupMembersAsync(groupId);
+        //if (members == null || !members.Any())
+        //{
+        //    _logger.LogWarning($"Attempted to send message to empty or non-existent group: {groupId}");
+        //    return;
+        //}
 
         var allClients = await _clientManager.GetAllClientsAsync();
-        var memberClients = allClients
-            .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
-            .ToList();
+        //var memberClients = allClients
+        //    .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
+        //    .ToList();
 
-        var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
-        await Task.WhenAll(tasks);
+        //var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
+        //await Task.WhenAll(tasks);
 
 
-        _logger.LogInformation($"Message sent to group {groupId} with {memberClients.Count} members.");
+        //_logger.LogInformation($"Message sent to group {groupId} with {memberClients.Count} members.");
     }
 }
