@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 using WebSocketChatServer1.Interfaces;
@@ -12,6 +13,7 @@ namespace WebSocketChatServer1.Services;
 public class RoomManager : IRoomManager
 {
     private readonly ConcurrentDictionary<string, Room> _rooms = new();
+    private readonly ConcurrentDictionary<string, string> _clientToRoomMap = new();
     private readonly ILogger<RoomManager> _logger;
     private readonly ITelemetryService _telemetry;
 
@@ -43,8 +45,8 @@ public class RoomManager : IRoomManager
             activity?.SetTag("chat.room.name", roomName);
             activity?.SetTag("chat.room.created_by", createdBy);
 
-            _telemetry.RecordGroupCreated("room");
-            _telemetry.UpdateActiveGroups(_rooms.Count);
+            _telemetry.RecordRoomCreated("room");
+            _telemetry.UpdateActiveRooms(_rooms.Count);
 
             _logger.LogInformation($"Room '{roomName}' (ID: {roomid}) created by {createdBy}");
 
@@ -60,6 +62,40 @@ public class RoomManager : IRoomManager
             stopwatch.Stop();
         }
     }
+    public Task<bool> AddClientToRoomAsync(string roomId, string clientId)
+    {
+        if (_rooms.TryGetValue(roomId, out var room))
+        {
+            // Fix: Use TryAdd for ConcurrentDictionary
+            if (room.ClientIds.TryAdd(clientId, string.Empty))
+            {
+                _clientToRoomMap[clientId] = roomId;
+                return Task.FromResult(true);
+            }
+        }
+        return Task.FromResult(false);
+    }
+    public Task<bool> RemoveClientFromRoomAsync(string roomId, string clientId)
+    {
+        if (_rooms.TryGetValue(roomId, out var room))
+        {
+            if (room.ClientIds.TryRemove(clientId, out _)) // Fix: Use overload that takes key and out value
+            {
+                _clientToRoomMap.TryRemove(clientId, out _);
+                return Task.FromResult(true);
+            }
+        }
+        return Task.FromResult(false);
+    }
+    public Task<IEnumerable<string>> GetClientIdsInRoomAsync(string roomId)
+    {
+        if (_rooms.TryGetValue(roomId, out var room))
+        {
+            // Fix: Select only the keys (client IDs) from the dictionary
+            return Task.FromResult<IEnumerable<string>>(room.ClientIds.Keys.ToList());
+        }
+        return Task.FromResult(Enumerable.Empty<string>());
+    }
 
     public async Task<bool> AddMemberAsync(string roomId, string username)
     {
@@ -74,7 +110,23 @@ public class RoomManager : IRoomManager
         }
         return await Task.FromResult(false);
     }
+    public Task<Room?> GetRoomForClientAsync(string clientId)
+    {
+        if (_clientToRoomMap.TryGetValue(clientId, out var roomId))
+        {
+            return GetRoomAsync(roomId);
+        }
+        return Task.FromResult<Room?>(null);
+    }
 
+    public Task<bool> IsClientInRoomAsync(string roomId, string clientId)
+    {
+        if (_rooms.TryGetValue(roomId, out var room))
+        {
+            return Task.FromResult(room.ClientIds.ContainsKey(clientId));
+        }
+        return Task.FromResult(false);
+    }
     public async Task<bool> RemoveMemberAsync(string roomId, string username)
     {
         if (_rooms.TryGetValue(roomId, out var room))
@@ -104,14 +156,14 @@ public class RoomManager : IRoomManager
 
     public async Task<IEnumerable<Room>> GetRoomsByUserAsync(string username)
     {
-        var userGroups = _rooms.Values.Where(g => g.Members.Contains(username)).ToList();
-        return await Task.FromResult(userGroups);
+        var userRooms = _rooms.Values.Where(g => g.Members.Contains(username)).ToList();
+        return await Task.FromResult(userRooms);
     }
 
     public async Task<IEnumerable<Room>> GetAllRoomsAsync()
     {
-        var allGroups = _rooms.Values.ToList();
-        return await Task.FromResult(allGroups);
+        var allRooms = _rooms.Values.ToList();
+        return await Task.FromResult(allRooms);
     }
 
     public async Task<bool> IsRoomMemberAsync(string roomId, string username)
@@ -128,6 +180,10 @@ public class RoomManager : IRoomManager
         var removed = _rooms.TryRemove(roomId, out var room);
         if (removed && room != null)
         {
+            foreach (var clientId in room.ClientIds)
+            {
+                _clientToRoomMap.TryRemove(clientId);
+            }
             _logger.LogInformation($"Room {room.Name} (ID: {roomId}) deleted");
         }
         return await Task.FromResult(removed);

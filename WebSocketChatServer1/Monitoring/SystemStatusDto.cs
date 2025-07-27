@@ -7,7 +7,7 @@ public class SystemStatusDto
 {
     public DateTime Timestamp { get; set; }
     public int CurrentActiveConnections { get; set; }
-    public int CurrentActiveGroups { get; set; }
+    public int CurrentActiveRooms { get; set; }
     public long TotalCommandsToday { get; set; }
     public long TotalErrorsToday { get; set; }
     public double ErrorRate { get; set; }

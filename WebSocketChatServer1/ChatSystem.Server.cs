@@ -14,16 +14,8 @@ namespace WebSocketChatServer1.Server;
 
 public class ChatServer
 {
-    //private readonly IClientManager _clientManager;
-    //private readonly IMessageBroadcaster _broadcaster;
-    //private readonly IMessageHandler<ChatMessage> _chatHandler;
-    //private readonly IMessageHandler<FileTransferMessage> _fileHandler;
-    //private readonly IEnumerable<ICommandProcessor> _commandProcessors;
-    //private readonly IServiceProvider _serviceProvider;
-    //private readonly ILogger<ChatServer> _logger;
     private readonly ILogger<ChatServer> _logger;
     private readonly IClientManager _clientManager;
-    //private readonly IGroupManager _groupManager;
     private readonly IMessageBroadcaster _messageBroadcaster;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFileTransferStateService _fileTransferStateService;
@@ -38,7 +30,6 @@ public class ChatServer
         IServiceProvider serviceProvider,
         ILogger<ChatServer> logger,
         IClientManager clientManager,
-        //IGroupManager groupManager,
         IMessageBroadcaster messageBroadcaster,
         IFileStorageService fileStorageService,
         IFileTransferStateService fileTransferStateService,
@@ -51,7 +42,6 @@ public class ChatServer
         _serviceProvider = serviceProvider;
         _logger = logger;
         _clientManager = clientManager;
-        //_groupManager = groupManager;
         _messageBroadcaster = messageBroadcaster;
         _fileStorageService = fileStorageService;
         _fileTransferStateService = fileTransferStateService;
@@ -63,7 +53,6 @@ public class ChatServer
     }
 
     public async Task HandleWebSocketAsync(HttpContext context, WebSocket webSocket, CancellationToken cancellationToken)
-    //public async Task HandleWebSocketAsync(HttpContext context, WebSocket webSocket)
     {
         var clientId = Guid.NewGuid().ToString();
         var client = new Client
@@ -82,34 +71,13 @@ public class ChatServer
             // WebSocket을 Stream으로 변환
             var stream = webSocket.AsStream();
 
-            // MultiplexingStream 생성
-            //var multiplexingStream = await MultiplexingStream.CreateAsync(
-            //    stream,
-            //    new MultiplexingStream.Options
-            //    {
-            //        TraceSource = new System.Diagnostics.TraceSource("ChatServer")
-            //    },
-            //    CancellationToken.None);
-
-            // 채널 생성
-            //var messageChannelTask = multiplexingStream.AcceptChannelAsync("messages", CancellationToken.None);
-            //var fileChannelTask = multiplexingStream.AcceptChannelAsync("files", CancellationToken.None);
-
-            //await Task.WhenAll(messageChannelTask, fileChannelTask);
-
-            //var messageChannel = await messageChannelTask;
-            //var fileChannel = await fileChannelTask;
-
             // 연결 등록
             var connection = new WebSocketClientConnection(
                 messageChannel,
                 fileChannel,
                 _serviceProvider.GetRequiredService<ILogger<WebSocketClientConnection>>());
 
-            //if (_messageBroadcaster is IMessageBroadcaster broadcaster)
-            //{
             _messageBroadcaster.RegisterConnection(clientId, connection);
-            //}
 
             _logger.LogInformation($"Client {clientId} ({client.Username}) connected successfully");
 
@@ -333,15 +301,6 @@ public class ChatServer
                     await privateMessageProcessor.ProcessAsync(clientId, "privateMessage", args);
                 }
                 break;
-            //case "roomChat":
-            //    // 룸 채팅도 GroupChatCommandProcessor에서 처리 (동일한 로직)
-            //    var roomChatProcessor = _commandProcessors.FirstOrDefault(p => p.GetType().Name == "RoomMessageCommandProcessor");
-            //    if (roomChatProcessor != null)
-            //    {
-            //        var args = new[] { message.RoomId, message.Message };
-            //        await roomChatProcessor.ProcessAsync(clientId, "roomChat", args);
-            //    }
-            //    break;
             case "roomMessage":
                 // roomMessage는 RoomMessageCommandProcessor에서 처리
                 var roomMessageProcessor = _commandProcessors.FirstOrDefault(p => p.GetType().Name == "RoomMessageCommandProcessor");

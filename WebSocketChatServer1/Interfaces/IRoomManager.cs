@@ -13,4 +13,11 @@ public interface IRoomManager
     Task<bool> IsRoomMemberAsync(string roomId, string username);
     Task<bool> DeleteRoomAsync(string roomId);
     Task<IEnumerable<string>> GetRoomMembersAsync(string roomId);
+
+    Task<bool> AddClientToRoomAsync(string roomId, string clientId);
+    Task<bool> RemoveClientFromRoomAsync(string roomId, string clientId);
+    Task<IEnumerable<string>> GetClientIdsInRoomAsync(string roomId);
+    Task<Room?> GetRoomForClientAsync(string clientId);
+    Task<bool> IsClientInRoomAsync(string roomId, string clientId);
+
 }

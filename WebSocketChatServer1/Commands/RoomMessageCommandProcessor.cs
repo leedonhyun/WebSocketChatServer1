@@ -10,17 +10,17 @@ namespace WebSocketChatServer1.Commands;
 
 public class RoomMessageCommandProcessor : BaseCommandProcessor
 {
-    //private readonly IGroupManager _groupManager;
+    private readonly IRoomManager _roomManager;
     private readonly IMessageBroadcaster _broadcaster;
 
     public RoomMessageCommandProcessor(
         IClientManager clientManager,
-        //IGroupManager groupManager,
+        IRoomManager roomManager,
         IMessageBroadcaster broadcaster,
         ICommandLogger commandLogger,
         ILogger<RoomMessageCommandProcessor> logger) : base(clientManager, commandLogger, logger)
     {
-        //_groupManager = groupManager;
+        _roomManager = roomManager;
         _broadcaster = broadcaster;
     }
 
@@ -41,18 +41,19 @@ public class RoomMessageCommandProcessor : BaseCommandProcessor
         if (client == null) return;
 
         // Room ID 정리 (파이프 문자 제거)
-        var roomId = args[0].Trim('|', ' ');
-        var message = string.Join(" ", args.Skip(1));
+        var roomType = args[0];
+        var roomId = args[1];//.Trim('|', ' ');
+        var message = args[2];// string.Join(" ", args.Skip(1));
 
-        //if (!await _groupManager.IsGroupMemberAsync(roomId, client.Username))
-        //{
-        //    await SendErrorMessage(clientId, $"You are not a member of room '{roomId}'");
-        //    return;
-        //}
+        if (!await _roomManager.IsRoomMemberAsync(roomId, client.Username))
+        {
+            await SendErrorMessage(clientId, $"You are not a member of room '{roomId}'");
+            return;
+        }
 
         var roomMessage = new ChatMessage
         {
-            Type = "roomMessage",
+            Type = roomType,//"roomMessage",
             Username = client.Username,
             Message = message,
             RoomId = roomId,
@@ -61,7 +62,7 @@ public class RoomMessageCommandProcessor : BaseCommandProcessor
         };
 
         // 룸 멤버들에게 메시지 전송
-        await BroadcastToRoomMembers(roomId, roomMessage);
+        await BroadcastToRoomMembers(roomId, roomMessage, cancellationToken);
     }
 
     private async Task SendErrorMessage(string clientId, string errorMessage)
@@ -76,20 +77,20 @@ public class RoomMessageCommandProcessor : BaseCommandProcessor
         await _broadcaster.SendToClientAsync(clientId, error);
     }
 
-    private async Task BroadcastToRoomMembers(string roomId, ChatMessage message)
+    private async Task BroadcastToRoomMembers(string roomId, ChatMessage message, CancellationToken cancellationToken)
     {
-        //var members = await _groupManager.GetGroupMembersAsync(roomId);
+        var members = await _roomManager.GetRoomMembersAsync(roomId);
         var clients = await ClientManager.GetAllClientsAsync();
 
         var tasks = new List<Task>();
-        //foreach (var member in members)
-        //{
-        //    var memberClient = clients.FirstOrDefault(c => c.Username == member);
-        //    if (memberClient != null)
-        //    {
-        //        tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message));
-        //    }
-        //}
+        foreach (var member in members)
+        {
+            var memberClient = clients.FirstOrDefault(c => c.Username == member);
+            if (memberClient != null)
+            {
+                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message, cancellationToken));
+            }
+        }
 
         if (tasks.Count > 0)
         {
@@ -101,6 +102,6 @@ public class RoomMessageCommandProcessor : BaseCommandProcessor
 
     public override async Task ProcessAsync(string clientId, ChatMessage chatMessage, CancellationToken cancellationToken = default)
     {
-      await  this.ProcessAsync(clientId, chatMessage.Type, new[] { chatMessage.RoomId, chatMessage.Message }, cancellationToken);
+        await this.ProcessAsync(clientId, chatMessage.Type, new[] { chatMessage.RoomId, chatMessage.Message }, cancellationToken);
     }
 }

@@ -21,7 +21,7 @@ public class RedisMessageBroadcaster : IMessageBroadcaster, IDisposable
     private readonly IDatabase _redisDatabase; // 클라이언트-서버 매핑을 위한 Redis DB
     private readonly ConcurrentDictionary<string, IClientConnection> _localConnections = new();
     private readonly IClientManager _clientManager; // 클라이언트 정보 조회를 위함 (분산 버전)
-    //private readonly IGroupManager _groupManager;
+    private readonly IRoomManager _roomManager;
     private readonly ILogger<RedisMessageBroadcaster> _logger;
     private readonly ITelemetryService _telemetry;
     private readonly CancellationTokenSource _cts = new();
@@ -32,14 +32,14 @@ public class RedisMessageBroadcaster : IMessageBroadcaster, IDisposable
     public RedisMessageBroadcaster(
         IConnectionMultiplexer redis,
         IClientManager clientManager, // DistributedClientManager 주입
-        //IGroupManager groupManager,
+        IRoomManager roomManager,
         ILogger<RedisMessageBroadcaster> logger,
         ITelemetryService telemetry)
     {
         _redisSubscriber = redis.GetSubscriber();
         _redisDatabase = redis.GetDatabase();
         _clientManager = clientManager;
-        //_groupManager = groupManager;
+        _roomManager = roomManager;
         _logger = logger;
         _telemetry = telemetry;
 
@@ -213,24 +213,24 @@ public class RedisMessageBroadcaster : IMessageBroadcaster, IDisposable
         }
     }
 
-    public async Task SendToGroupAsync<T>(string groupId, T message, string? excludeUsername = null, CancellationToken cancellationToken = default) where T : BaseMessage
+    public async Task SendToRoomAsync<T>(string roomId, T message, string? excludeUsername = null, CancellationToken cancellationToken = default) where T : BaseMessage
     {
-        //var members = await _groupManager.GetGroupMembersAsync(groupId);
-        //if (members == null || !members.Any())
-        //{
-        //    _logger.LogWarning($"Attempted to send message to empty or non-existent group: {groupId}");
-        //    return;
-        //}
+        var members = await _roomManager.GetRoomMembersAsync(roomId);
+        if (members == null || !members.Any())
+        {
+            _logger.LogWarning($"Attempted to send message to empty or non-existent room: {roomId}");
+            return;
+        }
 
-        //var allClients = await _clientManager.GetAllClientsAsync();
-        //var memberClients = allClients
-        //    .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
-        //    .ToList();
+        var allClients = await _clientManager.GetAllClientsAsync();
+        var memberClients = allClients
+            .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
+            .ToList();
 
-        //var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
-        //await Task.WhenAll(tasks);
+        var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
+        await Task.WhenAll(tasks);
 
-        //_logger.LogInformation($"Message sent to group {groupId} with {memberClients.Count} members.");
+        _logger.LogInformation($"Message sent to room {roomId} with {memberClients.Count} members.");
     }
 
     // 특정 사용자 이름에게 메시지 전송
@@ -238,13 +238,13 @@ public class RedisMessageBroadcaster : IMessageBroadcaster, IDisposable
     {
         if (username.StartsWith(RoomPrefix, StringComparison.OrdinalIgnoreCase))
         {
-            var groupId = username[RoomPrefix.Length..];
+            var roomId = username[RoomPrefix.Length..];
             string? excludeUsername = null;
             if (message is ChatMessage chatMessage)
             {
                 excludeUsername = chatMessage.Username;
             }
-            await SendToGroupAsync(groupId, message, excludeUsername, cancellationToken);
+            await SendToRoomAsync(roomId, message, excludeUsername, cancellationToken);
             return;
         }
 
@@ -408,5 +408,60 @@ public class RedisMessageBroadcaster : IMessageBroadcaster, IDisposable
         {
             _logger.LogError(ex, "Failed to unsubscribe from Redis channels during shutdown.");
         }
+    }
+
+
+    public async Task SendToClientAsync<T>(IEnumerable<string>? clientIds, T message, CancellationToken cancellationToken = default) where T : BaseMessage
+    {
+
+        if (clientIds == null || !clientIds.Any())
+        {
+            _logger.LogWarning("No client IDs provied for sending message.");
+            return;
+        }
+        var messageJson = JsonSerializer.Serialize(message);
+
+        // 1. 로컬 클라이언트와 원격 클라이언트를 분리
+        var localSendTasks = new List<Task>();
+        var remoteClientsByServer = new Dictionary<string, List<string>>();
+
+        foreach (var clientId in clientIds)
+        {
+            if (_localConnections.TryGetValue(clientId, out var connection) && connection.IsConnected)
+            {
+                // 로컬 클라이언트는 직접 전송
+                localSendTasks.Add(connection.SendAsync(message, cancellationToken));
+            }
+            else
+            {
+                // 원격 클라이언트는 서버 인스턴스별로 그룹화
+                var serverInstanceName = await _redisDatabase.StringGetAsync($"client_location:{clientId}");
+                if (!serverInstanceName.IsNullOrEmpty)
+                {
+                    var serverName = serverInstanceName.ToString();
+                    if (!remoteClientsByServer.ContainsKey(serverName))
+                    {
+                        remoteClientsByServer[serverName] = new List<string>();
+                    }
+                    remoteClientsByServer[serverName].Add(clientId);
+                }
+                else
+                {
+                    _logger.LogWarning($"Client {clientId} not found on any active instance during multi-send.");
+                }
+            }
+        }
+
+        // 2. 원격 서버 인스턴스별로 그룹화된 메시지 발행
+        var remoteSendTasks = remoteClientsByServer.Select(kvp =>
+        {
+            var serverName = kvp.Key;
+            var clientIdsForServer = kvp.Value;
+            var payload = JsonSerializer.Serialize(new { ClientIds = clientIdsForServer, Message = messageJson });
+            return _redisSubscriber.PublishAsync(RedisChannel.Literal($"{PrivateMessageChannelPrefix}{serverName}"), payload);
+        });
+
+        // 3. 모든 로컬 및 원격 전송 작업을 병렬로 실행
+        await Task.WhenAll(localSendTasks.Concat(remoteSendTasks.Select(t => (Task)t)));
     }
 }

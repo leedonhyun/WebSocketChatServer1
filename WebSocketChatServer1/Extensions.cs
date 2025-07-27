@@ -227,7 +227,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICommandProcessor, PrivateMessageCommandProcessor>(); // 개인 메시지
         services.AddScoped<ICommandProcessor, CreateRoomCommandProcessor>(); // room 생성
         services.AddScoped<ICommandProcessor, JoinRoomCommandProcessor>(); // 그룹 참가
-        //services.AddScoped<ICommandProcessor, GroupChatCommandProcessor>(); // 그룹 채팅
         services.AddScoped<ICommandProcessor, RoomMessageCommandProcessor>(); // 룸 메시지
         services.AddScoped<ICommandProcessor, SendFileCommandProcessor>(); // 파일 전송
 

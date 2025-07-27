@@ -9,7 +9,6 @@ using WebSocketChatServer1.Interfaces;
 using WebSocketChatShared.Models;
 using WebSocketChatServer1.Telemetry;
 
-//using IGroupManager = WebSocketChatServer1.Interfaces.IGroupManager;
 
 namespace WebSocketChatServer1.Services;
 
@@ -19,11 +18,11 @@ public class MessageBroadcaster : IMessageBroadcaster
     private readonly ConcurrentDictionary<string, IClientConnection> _connections = new();
     private readonly ILogger<MessageBroadcaster> _logger;
     private readonly ITelemetryService _telemetry;
-    private readonly IGroupManager _groupManager;
-    public MessageBroadcaster(IClientManager clientManager, IGroupManager groupManager, ILogger<MessageBroadcaster> logger, ITelemetryService telemetry)
+    private readonly IRoomManager _roomManager;
+    public MessageBroadcaster(IClientManager clientManager, IRoomManager roomManager, ILogger<MessageBroadcaster> logger, ITelemetryService telemetry)
     {
         _clientManager = clientManager;
-        _groupManager = groupManager;
+        _roomManager = roomManager;
         _logger = logger;
         _telemetry = telemetry;
     }
@@ -140,24 +139,35 @@ public class MessageBroadcaster : IMessageBroadcaster
         }
     }
 
-    public async Task SendToGroupAsync<T>(string groupId, T message, string? excludeUsername = null, CancellationToken cancellationToken = default) where T : BaseMessage
+    public async Task SendToRoomAsync<T>(string roomId, T message, string? excludeUsername = null, CancellationToken cancellationToken = default) where T : BaseMessage
     {
-        //var members = await _groupManager.GetGroupMembersAsync(groupId);
-        //if (members == null || !members.Any())
-        //{
-        //    _logger.LogWarning($"Attempted to send message to empty or non-existent group: {groupId}");
-        //    return;
-        //}
+        var members = await _roomManager.GetRoomMembersAsync(roomId);
+        if (members == null || !members.Any())
+        {
+            _logger.LogWarning($"Attempted to send message to empty or non-existent room: {roomId}");
+            return;
+        }
 
         var allClients = await _clientManager.GetAllClientsAsync();
-        //var memberClients = allClients
-        //    .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
-        //    .ToList();
+        var memberClients = allClients
+            .Where(c => members.Contains(c.Username) && c.Username != excludeUsername)
+            .ToList();
 
-        //var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
-        //await Task.WhenAll(tasks);
+        var tasks = memberClients.Select(client => SendToClientAsync(client.Id, message, cancellationToken));
+        await Task.WhenAll(tasks);
 
 
-        //_logger.LogInformation($"Message sent to group {groupId} with {memberClients.Count} members.");
+        _logger.LogInformation($"Message sent to room {roomId} with {memberClients.Count} members.");
+    }
+
+    public async Task SendToClientAsync<T>(IEnumerable<string>? clientIds, T message, CancellationToken cancellationToken = default) where T : BaseMessage
+    {
+        if (clientIds == null || !clientIds.Any()){
+
+            _logger.LogWarning("No client IDs provided for sending message.");
+            return;
+        }
+        var tasks = clientIds.Select(async clientId => await SendToClientAsync(clientId, message, cancellationToken));
+        await Task.WhenAll(tasks);
     }
 }

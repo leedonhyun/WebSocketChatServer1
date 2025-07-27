@@ -189,7 +189,7 @@ public static class ChatConstants
     /// </summary>
     public static class ConsoleUI
     {
-        public const string WelcomeHeader = "=== Advanced WebSocket Chat Client with Group Support ===";
+        public const string WelcomeHeader = "=== Advanced WebSocket Chat Client with Room Support ===";
         public const string Note = "Note: Any message not starting with '/' will be sent as public chat";
         public const string CurrentRoomInfo = "       Currently in room: {0}";
         public const string PromptPublic = "[Public] > ";

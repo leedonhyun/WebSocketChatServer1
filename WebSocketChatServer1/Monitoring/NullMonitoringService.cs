@@ -35,7 +35,7 @@ public class NullMonitoringService : IMonitoringService
         {
             Timestamp = DateTime.UtcNow,
             CurrentActiveConnections = 0,
-            CurrentActiveGroups = 0,
+            CurrentActiveRooms = 0,
             TotalCommandsToday = 0,
             TotalErrorsToday = 0,
             ErrorRate = 0,

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace WebSocketChatShared.Models;
@@ -10,4 +11,5 @@ public class Room
     public string CreatedBy { get; set; } = "";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public HashSet<string> Members { get; set; } = new();
+    public ConcurrentDictionary<string, string> ClientIds { get; set; } = new();
 }

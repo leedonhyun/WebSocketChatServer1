@@ -12,16 +12,16 @@ namespace WebSocketChatServer1.Controllers;
 public class MonitoringController : ControllerBase
 {
     private readonly IMonitoringService _monitoringService;
-    //private readonly IGroupManager _groupManager;
+    private readonly IRoomManager _roomManager;
     private readonly ILogger<MonitoringController> _logger;
 
     public MonitoringController(
         IMonitoringService monitoringService,
-        //IGroupManager groupManager,
+        IRoomManager roomManager,
         ILogger<MonitoringController> logger)
     {
         _monitoringService = monitoringService;
-        //_groupManager = groupManager;
+        _roomManager = roomManager;
         _logger = logger;
     }
 
@@ -209,7 +209,7 @@ public class MonitoringController : ControllerBase
         }
     }
 
-    #region Room/Group Management APIs
+    #region Room Management APIs
 
     /// <summary>
     /// 전체 룸(그룹) 목록 조회
@@ -224,18 +224,17 @@ public class MonitoringController : ControllerBase
     {
         try
         {
-            //var groups = await _groupManager.GetAllGroupsAsync();
-            //var rooms = groups.Select(g => new RoomInfoDto
-            //{
-            //    Id = g.Id,
-            //    Name = g.Name,
-            //    CreatedBy = g.CreatedBy,
-            //    CreatedAt = g.CreatedAt,
-            //    MemberCount = g.Members.Count
-            //}).ToList();
+            var rooms = await _roomManager.GetAllRoomsAsync();
+            var roomInfos = rooms.Select(g => new RoomInfoDto
+            {
+                Id = g.Id,
+                Name = g.Name,
+                CreatedBy = g.CreatedBy,
+                CreatedAt = g.CreatedAt,
+                MemberCount = g.Members.Count
+            }).ToList();
 
-            //return Ok(rooms);
-            return Ok();
+            return Ok(roomInfos);
         }
         catch (Exception ex)
         {
@@ -260,24 +259,23 @@ public class MonitoringController : ControllerBase
     {
         try
         {
-            //var group = await _groupManager.GetGroupAsync(roomId);
-            //if (group == null)
-            //{
-            //    return NotFound($"Room with ID '{roomId}' not found");
-            //}
+            var room = await _roomManager.GetRoomAsync(roomId);
+            if (room == null)
+            {
+                return NotFound($"Room with ID '{roomId}' not found");
+            }
 
-            //var roomDetail = new RoomDetailDto
-            //{
-            //    Id = group.Id,
-            //    Name = group.Name,
-            //    CreatedBy = group.CreatedBy,
-            //    CreatedAt = group.CreatedAt,
-            //    MemberCount = group.Members.Count,
-            //    Members = group.Members.ToList()
-            //};
+            var roomDetail = new RoomDetailDto
+            {
+                Id = room.Id,
+                Name = room.Name,
+                CreatedBy = room.CreatedBy,
+                CreatedAt = room.CreatedAt,
+                MemberCount = room.Members.Count,
+                Members = room.Members.ToList()
+            };
 
-            //return Ok(roomDetail);
-            return Ok();
+            return Ok(roomDetail);
         }
         catch (Exception ex)
         {
@@ -293,32 +291,31 @@ public class MonitoringController : ControllerBase
     /// <returns>사용자가 참여한 룸 목록</returns>
     /// <response code="200">사용자 룸 목록 조회 성공</response>
     /// <response code="500">내부 서버 오류</response>
-    //[HttpGet("users/{username}/rooms")]
-    //[ProducesResponseType(typeof(List<RoomInfoDto>), 200)]
-    //[ProducesResponseType(typeof(string), 500)]
-    //public async Task<ActionResult<List<RoomInfoDto>>> GetUserRooms(string username)
-    //{
-    //    try
-    //    {
-    //        //var groups = await _groupManager.GetGroupsByUserAsync(username);
-    //        //var rooms = groups.Select(g => new RoomInfoDto
-    //        //{
-    //        //    Id = g.Id,
-    //        //    Name = g.Name,
-    //        //    CreatedBy = g.CreatedBy,
-    //        //    CreatedAt = g.CreatedAt,
-    //        //    MemberCount = g.Members.Count
-    //        //}).ToList();
+    [HttpGet("users/{username}/rooms")]
+    [ProducesResponseType(typeof(List<RoomInfoDto>), 200)]
+    [ProducesResponseType(typeof(string), 500)]
+    public async Task<ActionResult<List<RoomInfoDto>>> GetUserRooms(string username)
+    {
+        try
+        {
+            var rooms = await _roomManager.GetRoomsByUserAsync(username);
+            var roomInfos = rooms.Select(g => new RoomInfoDto
+            {
+                Id = g.Id,
+                Name = g.Name,
+                CreatedBy = g.CreatedBy,
+                CreatedAt = g.CreatedAt,
+                MemberCount = g.Members.Count
+            }).ToList();
 
-    //        //return Ok(rooms);
-    //        return Ok(default);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        _logger.LogError(ex, "Error getting rooms for user {Username}", username);
-    //        return StatusCode(500, "Internal server error");
-    //    }
-    //}
+            return Ok(roomInfos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting rooms for user {Username}", username);
+            return StatusCode(500, "Internal server error");
+        }
+    }
 
     /// <summary>
     /// 룸 통계 정보 조회
@@ -326,55 +323,55 @@ public class MonitoringController : ControllerBase
     /// <returns>룸 관련 통계 정보</returns>
     /// <response code="200">룸 통계 조회 성공</response>
     /// <response code="500">내부 서버 오류</response>
-    //[HttpGet("rooms/stats")]
-    //[ProducesResponseType(typeof(RoomStatsDto), 200)]
-    //[ProducesResponseType(typeof(string), 500)]
-    //public async Task<ActionResult<RoomStatsDto>> GetRoomStats()
-    //{
-    //    try
-    //    {
-    //        //var groups = await _groupManager.GetAllGroupsAsync();
-    //        //var groupsList = groups.ToList();
+    [HttpGet("rooms/stats")]
+    [ProducesResponseType(typeof(RoomStatsDto), 200)]
+    [ProducesResponseType(typeof(string), 500)]
+    public async Task<ActionResult<RoomStatsDto>> GetRoomStats()
+    {
+        try
+        {
+            var rooms = await _roomManager.GetAllRoomsAsync();
+            var roomList = rooms.ToList();
 
-    //        var totalRooms = groupsList.Count;
-    //        var averageMembers = totalRooms > 0 ? groupsList.Average(g => g.Members.Count) : 0.0;
-    //        var mostPopularRoom = groupsList.OrderByDescending(g => g.Members.Count).FirstOrDefault();
-    //        var recentlyCreated = groupsList.OrderByDescending(g => g.CreatedAt).Take(5)
-    //            .Select(g => new RoomInfoDto
-    //            {
-    //                Id = g.Id,
-    //                Name = g.Name,
-    //                CreatedBy = g.CreatedBy,
-    //                CreatedAt = g.CreatedAt,
-    //                MemberCount = g.Members.Count
-    //            }).ToList();
-    //        var emptyRooms = groupsList.Count(g => g.Members.Count == 0);
+            var totalRooms = roomList.Count;
+            var averageMembers = totalRooms > 0 ? roomList.Average(g => g.Members.Count) : 0.0;
+            var mostPopularRoom = roomList.OrderByDescending(g => g.Members.Count).FirstOrDefault();
+            var recentlyCreated = roomList.OrderByDescending(g => g.CreatedAt).Take(5)
+                .Select(g => new RoomInfoDto
+                {
+                    Id = g.Id,
+                    Name = g.Name,
+                    CreatedBy = g.CreatedBy,
+                    CreatedAt = g.CreatedAt,
+                    MemberCount = g.Members.Count
+                }).ToList();
+            var emptyRooms = roomList.Count(g => g.Members.Count == 0);
 
-    //        var stats = new RoomStatsDto
-    //        {
-    //            TotalRooms = totalRooms,
-    //            AverageMembers = Math.Round(averageMembers, 2),
-    //            MostPopularRoom = mostPopularRoom != null ? new RoomInfoDto
-    //            {
-    //                Id = mostPopularRoom.Id,
-    //                Name = mostPopularRoom.Name,
-    //                CreatedBy = mostPopularRoom.CreatedBy,
-    //                CreatedAt = mostPopularRoom.CreatedAt,
-    //                MemberCount = mostPopularRoom.Members.Count
-    //            } : null,
-    //            RecentlyCreatedRooms = recentlyCreated,
-    //            EmptyRooms = emptyRooms,
-    //            LastUpdated = DateTime.UtcNow
-    //        };
+            var stats = new RoomStatsDto
+            {
+                TotalRooms = totalRooms,
+                AverageMembers = Math.Round(averageMembers, 2),
+                MostPopularRoom = mostPopularRoom != null ? new RoomInfoDto
+                {
+                    Id = mostPopularRoom.Id,
+                    Name = mostPopularRoom.Name,
+                    CreatedBy = mostPopularRoom.CreatedBy,
+                    CreatedAt = mostPopularRoom.CreatedAt,
+                    MemberCount = mostPopularRoom.Members.Count
+                } : null,
+                RecentlyCreatedRooms = recentlyCreated,
+                EmptyRooms = emptyRooms,
+                LastUpdated = DateTime.UtcNow
+            };
 
-    //        return Ok(stats);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        _logger.LogError(ex, "Error getting room statistics");
-    //        return StatusCode(500, "Internal server error");
-    //    }
-    //}
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting room statistics");
+            return StatusCode(500, "Internal server error");
+        }
+    }
 
     /// <summary>
     /// 특정 룸의 멤버 목록 조회
@@ -384,34 +381,34 @@ public class MonitoringController : ControllerBase
     /// <response code="200">룸 멤버 목록 조회 성공</response>
     /// <response code="404">룸을 찾을 수 없음</response>
     /// <response code="500">내부 서버 오류</response>
-    //[HttpGet("rooms/{roomId}/members")]
-    //[ProducesResponseType(typeof(List<string>), 200)]
-    //[ProducesResponseType(typeof(string), 404)]
-    //[ProducesResponseType(typeof(string), 500)]
-    //public async Task<ActionResult<List<string>>> GetRoomMembers(string roomId)
-    //{
-    //    try
-    //    {
-    //        var group = await _groupManager.GetGroupAsync(roomId);
-    //        if (group == null)
-    //        {
-    //            return NotFound($"Room with ID '{roomId}' not found");
-    //        }
+    [HttpGet("rooms/{roomId}/members")]
+    [ProducesResponseType(typeof(List<string>), 200)]
+    [ProducesResponseType(typeof(string), 404)]
+    [ProducesResponseType(typeof(string), 500)]
+    public async Task<ActionResult<List<string>>> GetRoomMembers(string roomId)
+    {
+        try
+        {
+            var room = await _roomManager.GetRoomAsync(roomId);
+            if (room == null)
+            {
+                return NotFound($"Room with ID '{roomId}' not found");
+            }
 
-    //        var members = await _groupManager.GetGroupMembersAsync(roomId);
-    //        return Ok(members.ToList());
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        _logger.LogError(ex, "Error getting members for room {RoomId}", roomId);
-    //        return StatusCode(500, "Internal server error");
-    //    }
-    //}
+            var members = await _roomManager.GetRoomMembersAsync(roomId);
+            return Ok(members.ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting members for room {RoomId}", roomId);
+            return StatusCode(500, "Internal server error");
+        }
+    }
 
     #endregion
 }
 
-// DTOs for Room/Group APIs
+// DTOs for Room APIs
 public class RoomInfoDto
 {
     public string Id { get; set; } = "";

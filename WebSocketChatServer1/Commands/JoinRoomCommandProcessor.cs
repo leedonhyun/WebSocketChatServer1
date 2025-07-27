@@ -12,24 +12,23 @@ namespace WebSocketChatServer1.Commands;
 
 public class JoinRoomCommandProcessor : BaseCommandProcessor
 {
-    //private readonly IGroupManager _groupManager;
+    private readonly IRoomManager _roomManager;
     private readonly IMessageBroadcaster _broadcaster;
-
+    
     public JoinRoomCommandProcessor(
         IClientManager clientManager,
-        //IGroupManager groupManager,
+        IRoomManager roomManager,
         IMessageBroadcaster broadcaster,
         ICommandLogger commandLogger,
         ILogger<JoinRoomCommandProcessor> logger) : base(clientManager, commandLogger, logger)
     {
-        //_groupManager = groupManager    ;
+        _roomManager = roomManager    ;
         _broadcaster = broadcaster;
     }
 
     public override async Task<bool> CanProcessAsync(string command)
     {
         return await Task.FromResult(
-            //command.Equals("joinGroup", StringComparison.OrdinalIgnoreCase) ||
             command.Equals("joinRoom", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -47,54 +46,54 @@ public class JoinRoomCommandProcessor : BaseCommandProcessor
 
         // Room ID 정리 (파이프 문자 제거)
         var roomId = args[0].Trim('|', ' ');
-        //var group = await _groupManager.GetGroupAsync(groupId);
+        var room= await _roomManager.GetRoomAsync(roomId);
 
         var isRoom = command.Equals("joinRoom", StringComparison.OrdinalIgnoreCase);
         var entityType = isRoom ? "Room" : "";
 
-        //if (group == null)
-        //{
-        //    await SendErrorMessage(clientId, $"{entityType} '{groupId}' does not exist");
-        //    return;
-        //}
+        if (room == null)
+        {
+            await SendErrorMessage(clientId, $"{entityType} '{roomId}' does not exist");
+            return;
+        }
 
-        //if (await _groupManager.IsGroupMemberAsync(groupId, client.Username))
-        //{
-        //    await SendErrorMessage(clientId, $"You are already a member of {entityType.ToLower()} '{group.Name}'");
-        //    return;
-        //}
+        if (await _roomManager.IsRoomMemberAsync(roomId, client.Username))
+        {
+            await SendErrorMessage(clientId, $"You are already a member of {entityType.ToLower()} '{room.Name}'");
+            return;
+        }
 
-        ////await _groupManager.AddMemberAsync(groupId, client.Username);
+        await _roomManager.AddMemberAsync(roomId, client.Username);
 
         // 그룹/룸 참가 메트릭 기록
-        //var operationType = isRoom ? "join_room" : "";
-        //ChatTelemetry.GroupOperationsTotal.Add(1,
-        //    new KeyValuePair<string, object?>("operation", operationType),
-        //    new KeyValuePair<string, object?>("room.id", groupId),
-        //    new KeyValuePair<string, object?>("room.name", group.Name));
+        var operationType = isRoom ? "join_room" : "";
+        ChatTelemetry.RoomOperationsTotal.Add(1,
+            new KeyValuePair<string, object?>("operation", operationType),
+            new KeyValuePair<string, object?>("room.id", roomId),
+            new KeyValuePair<string, object?>("room.name", room.Name));
 
-        //var responseType = isRoom ? "roomJoined" : "groupJoined";
-        //var response = new ChatMessage
-        //{
-        //    Type = responseType,
-        //    Username = "System",
-        //    Message = $"Successfully joined {entityType.ToLower()} '{group.Name}'",
-        //    GroupId = groupId,
-        //    Timestamp = DateTime.UtcNow
-        //};
+        var responseType = isRoom ? "roomJoined" : "";
+        var response = new ChatMessage
+        {
+            Type = responseType,
+            Username = "System",
+            Message = $"Successfully joined {entityType.ToLower()} '{room.Name}'",
+            RoomId = roomId,
+            Timestamp = DateTime.UtcNow
+        };
 
-        //await _broadcaster.SendToClientAsync(clientId, response, cancellationToken);
+        await _broadcaster.SendToClientAsync(clientId, response, cancellationToken);
 
-        //// 그룹 멤버들에게 새 멤버 알림
-        //await BroadcastToGroupMembers(groupId, new ChatMessage
-        //{
-        //    Type = "system",
-        //    Username = "System",
-        //    Message = $"{client.Username} joined the {entityType.ToLower()}",
-        //    GroupId = groupId,
-        //    ChatType = isRoom ? "room" : "group",
-        //    Timestamp = DateTime.UtcNow
-        //}, client.Username);
+        // 그룹 멤버들에게 새 멤버 알림
+        await BroadcastToRoomMembers(roomId, new ChatMessage
+        {
+            Type = "system",
+            Username = "System",
+            Message = $"{client.Username} joined the {entityType.ToLower()}",
+            RoomId = roomId,
+            ChatType = isRoom ? "room" : "",
+            Timestamp = DateTime.UtcNow
+        }, client.Username);
     }
 
     private async Task SendErrorMessage(string clientId, string errorMessage)
@@ -109,20 +108,20 @@ public class JoinRoomCommandProcessor : BaseCommandProcessor
         await _broadcaster.SendToClientAsync(clientId, error);
     }
 
-    private async Task BroadcastToGroupMembers(string groupId, ChatMessage message, string? excludeUsername = null, CancellationToken  cancellationToken = default)
+    private async Task BroadcastToRoomMembers(string roomId, ChatMessage message, string? excludeUsername = null, CancellationToken  cancellationToken = default)
     {
-        //var members = await _groupManager.GetGroupMembersAsync(groupId);
+        var members = await _roomManager.GetRoomMembersAsync(roomId);
         var clients = await ClientManager.GetAllClientsAsync();
 
         var tasks = new List<Task>();
-        //foreach (var member in members.Where(m => m != excludeUsername))
-        //{
-        //    var memberClient = clients.FirstOrDefault(c => c.Username == member);
-        //    if (memberClient != null)
-        //    {
-        //        tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message, cancellationToken));
-        //    }
-        //}
+        foreach (var member in members.Where(m => m != excludeUsername))
+        {
+            var memberClient = clients.FirstOrDefault(c => c.Username == member);
+            if (memberClient != null)
+            {
+                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message, cancellationToken));
+            }
+        }
 
         if (tasks.Count > 0)
         {

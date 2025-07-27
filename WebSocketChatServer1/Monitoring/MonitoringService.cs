@@ -38,7 +38,7 @@ public class MonitoringService : IMonitoringService
                     ["$lte"] = to
                 }
             }),
-            new BsonDocument("$group", new BsonDocument
+            new BsonDocument("$room", new BsonDocument
             {
                 ["_id"] = "$commandType",
                 ["count"] = new BsonDocument("$sum", 1),
@@ -75,7 +75,7 @@ public class MonitoringService : IMonitoringService
         var pipeline = new[]
         {
             new BsonDocument("$match", new BsonDocument("username", new BsonDocument("$ne", BsonNull.Value))),
-            new BsonDocument("$group", new BsonDocument
+            new BsonDocument("$room", new BsonDocument
             {
                 ["_id"] = "$username",
                 ["commandCount"] = new BsonDocument("$sum", 1),
@@ -144,7 +144,7 @@ public class MonitoringService : IMonitoringService
         {
             Timestamp = now,
             CurrentActiveConnections = latestMetrics?.ActiveConnections ?? 0,
-            CurrentActiveGroups = latestMetrics?.ActiveRooms ?? 0,
+            CurrentActiveRooms = latestMetrics?.ActiveRooms ?? 0,
             TotalCommandsToday = todayCommands,
             TotalErrorsToday = todayErrors,
             ErrorRate = todayCommands > 0 ? (double)todayErrors / todayCommands : 0,

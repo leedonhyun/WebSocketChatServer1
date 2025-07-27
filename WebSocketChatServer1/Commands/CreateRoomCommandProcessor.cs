@@ -32,7 +32,6 @@ public class CreateRoomCommandProcessor : BaseCommandProcessor
     public override async Task<bool> CanProcessAsync(string command)
     {
         return await Task.FromResult(
-            command.Equals("createGroup", StringComparison.OrdinalIgnoreCase) ||
             command.Equals("createRoom", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -70,7 +69,7 @@ public class CreateRoomCommandProcessor : BaseCommandProcessor
 
             // 그룹/룸 생성 메트릭 기록
             var operationType = isRoom ? "create_room" : "";
-            ChatTelemetry.GroupOperationsTotal.Add(1,
+            ChatTelemetry.RoomOperationsTotal.Add(1,
                 new KeyValuePair<string, object?>("operation", operationType),
                 new KeyValuePair<string, object?>("name", roomName));
 

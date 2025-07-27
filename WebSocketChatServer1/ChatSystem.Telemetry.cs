@@ -51,10 +51,10 @@ public static class ChatTelemetry
         "Total number of private messages sent");
 
     /// <summary>그룹 작업 총 수</summary>
-    public static readonly Counter<long> GroupOperationsTotal = Meter.CreateCounter<long>(
-        "websocket_chat_group_operations_total",
+    public static readonly Counter<long> RoomOperationsTotal = Meter.CreateCounter<long>(
+        "websocket_chat_room_operations_total",
         "operations",
-        "Total number of group operations performed");
+        "Total number of room operations performed");
 
     /// <summary>사용자명 변경 총 수</summary>
     public static readonly Counter<long> UsernameChangesTotal = Meter.CreateCounter<long>(
@@ -69,10 +69,10 @@ public static class ChatTelemetry
         "Total number of files transferred");
 
     /// <summary>생성된 그룹 총 수</summary>
-    public static readonly Counter<long> GroupsCreatedTotal = Meter.CreateCounter<long>(
-        "websocket_chat_groups_created_total",
-        "groups",
-        "Total number of groups created");
+    public static readonly Counter<long> RoomCreatedTotal = Meter.CreateCounter<long>(
+        "websocket_chat_rooms_created_total",
+        "rooms",
+        "Total number of rooms created");
 
     /// <summary>발생한 오류 총 수</summary>
     public static readonly Counter<long> ErrorsOccurredTotal = Meter.CreateCounter<long>(
@@ -86,7 +86,7 @@ public static class ChatTelemetry
 
     // Thread-safe counters for current state
     private static long _activeConnections = 0;
-    private static long _activeGroups = 0;
+    private static long _activeRooms = 0;
 
     /// <summary>현재 활성 연결 수</summary>
     public static readonly ObservableGauge<long> ActiveConnections = Meter.CreateObservableGauge<long>(
@@ -96,11 +96,11 @@ public static class ChatTelemetry
         "Current number of active WebSocket connections");
 
     /// <summary>현재 활성 그룹 수</summary>
-    public static readonly ObservableGauge<long> ActiveGroups = Meter.CreateObservableGauge<long>(
-        "websocket_chat_active_groups",
-        () => _activeGroups,
-        "groups",
-        "Current number of active chat groups");
+    public static readonly ObservableGauge<long> ActiveRooms = Meter.CreateObservableGauge<long>(
+        "websocket_chat_active_rooms",
+        () => _activeRooms,
+        "rooms",
+        "Current number of active chat rooms");
 
     #endregion
 
@@ -143,7 +143,7 @@ public static class ChatTelemetry
     public const string ActivityClientConnection = "websocket.client.connection";
     public const string ActivityMessageProcessing = "websocket.message.processing";
     public const string ActivityFileTransfer = "websocket.file.transfer";
-    public const string ActivityGroupOperation = "websocket.group.operation";
+    public const string ActivityRoomOperation = "websocket.room.operation";
     public const string ActivityBroadcast = "websocket.broadcast";
     public const string ActivityPrivateMessage = "websocket.private_message";
     public const string ActivityCommandExecution = "websocket.command.execution";
@@ -194,7 +194,7 @@ public static class ChatTelemetry
     /// <summary>그룹 작업 Activity 시작</summary>
     public static Activity? StartRoomOperationActivity(string operation, string roomId)
     {
-        var activity = ActivitySource.StartActivity(ActivityGroupOperation);
+        var activity = ActivitySource.StartActivity(ActivityRoomOperation);
         activity?.SetTag("websocket.room.operation", operation);
         activity?.SetTag("websocket.room.id", roomId);
         return activity;
@@ -250,15 +250,15 @@ public static class ChatTelemetry
     }
 
     /// <summary>활성 그룹 수 증가</summary>
-    public static void IncrementActiveGroups()
+    public static void IncrementActiveRooms()
     {
-        Interlocked.Increment(ref _activeGroups);
+        Interlocked.Increment(ref _activeRooms);
     }
 
     /// <summary>활성 그룹 수 감소</summary>
-    public static void DecrementActiveGroups()
+    public static void DecrementActiveRooms()
     {
-        Interlocked.Decrement(ref _activeGroups);
+        Interlocked.Decrement(ref _activeRooms);
     }
 
     /// <summary>활성 연결 수 설정</summary>
@@ -268,9 +268,9 @@ public static class ChatTelemetry
     }
 
     /// <summary>활성 그룹 수 설정</summary>
-    public static void SetActiveGroups(long count)
+    public static void SetActiveRooms(long count)
     {
-        Interlocked.Exchange(ref _activeGroups, count);
+        Interlocked.Exchange(ref _activeRooms, count);
     }
 
     #endregion
@@ -318,16 +318,16 @@ public interface ITelemetryService
     void DecrementClientConnections();
     void IncrementActiveUsers();
     void DecrementActiveUsers();
-    void IncrementGroups();
-    void DecrementGroups();
+    void IncrementRooms();
+    void DecrementRooms();
     void IncrementFileUploads();
     void RecordMessageProcessed(string messageType, double durationMs, long sizeBytes);
     void RecordFileTransferred(string fileType, double durationMs, long sizeBytes);
     void RecordFileOperation(string operation, double durationMs, int sizeBytes);
-    void RecordGroupCreated(string groupType);
+    void RecordRoomCreated(string roomType);
     void RecordError(string errorType, string errorMessage);
     void UpdateActiveConnections(int count);
-    void UpdateActiveGroups(int count);
+    void UpdateActiveRooms(int count);
 }
 
 /// <summary>
@@ -358,15 +358,15 @@ public class TelemetryService : ITelemetryService
         // This is now handled by connection management
     }
 
-    public void IncrementGroups()
+    public void IncrementRooms()
     {
-        ChatTelemetry.GroupsCreatedTotal.Add(1);
-        ChatTelemetry.IncrementActiveGroups();
+        ChatTelemetry.RoomCreatedTotal.Add(1);
+        ChatTelemetry.IncrementActiveRooms();
     }
 
-    public void DecrementGroups()
+    public void DecrementRooms()
     {
-        ChatTelemetry.DecrementActiveGroups();
+        ChatTelemetry.DecrementActiveRooms();
     }
 
     public void IncrementFileUploads()
@@ -406,12 +406,12 @@ public class TelemetryService : ITelemetryService
             new KeyValuePair<string, object?>("file.type", fileType));
     }
 
-    public void RecordGroupCreated(string groupType)
+    public void RecordRoomCreated(string roomType)
     {
-        ChatTelemetry.GroupsCreatedTotal.Add(1,
-            new KeyValuePair<string, object?>("group.type", groupType));
+        ChatTelemetry.RoomCreatedTotal.Add(1,
+            new KeyValuePair<string, object?>("room.type", roomType));
 
-        ChatTelemetry.IncrementActiveGroups();
+        ChatTelemetry.IncrementActiveRooms();
     }
 
     public void RecordError(string errorType, string errorMessage)
@@ -426,9 +426,9 @@ public class TelemetryService : ITelemetryService
         ChatTelemetry.SetActiveConnections(count);
     }
 
-    public void UpdateActiveGroups(int count)
+    public void UpdateActiveRooms(int count)
     {
-        ChatTelemetry.SetActiveGroups(count);
+        ChatTelemetry.SetActiveRooms(count);
     }
 }
 

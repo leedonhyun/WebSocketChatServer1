@@ -11,19 +11,19 @@ namespace WebSocketChatServer1.Commands;
 
 public class SendFileCommandProcessor : BaseCommandProcessor
 {
-    //private readonly IGroupManager _groupManager;
+    private readonly IRoomManager _roomManager;
     private readonly IMessageBroadcaster _broadcaster;
     private readonly IFileStorageService _fileStorage;
 
     public SendFileCommandProcessor(
         IClientManager clientManager,
-        //IGroupManager groupManager,
+        IRoomManager roomManager,
         IMessageBroadcaster broadcaster,
         IFileStorageService fileStorage,
         ICommandLogger commandLogger,
         ILogger<SendFileCommandProcessor> logger) : base(clientManager, commandLogger, logger)
     {
-        //_groupManager = groupManager;
+        _roomManager = roomManager;
         _broadcaster = broadcaster;
         _fileStorage = fileStorage;
     }
@@ -110,14 +110,14 @@ public class SendFileCommandProcessor : BaseCommandProcessor
         if (client == null) return;
 
         // Room 멤버십 확인
-        //if (!await _groupManager.IsGroupMemberAsync(roomId, client.Username))
-        //{
-        //    await SendErrorMessage(senderId, $"You are not a member of room '{roomId}'");
-        //    return;
-        //}
+        if (!await _roomManager.IsRoomMemberAsync(roomId, client.Username))
+        {
+            await SendErrorMessage(senderId, $"You are not a member of room '{roomId}'");
+            return;
+        }
 
         //// Room 멤버들에게 파일 제공 알림
-        //var members = await _groupManager.GetGroupMembersAsync(roomId);
+        var members = await _roomManager.GetRoomMembersAsync(roomId);
         var clients = await ClientManager.GetAllClientsAsync();
 
         var message = new ChatMessage
@@ -131,16 +131,16 @@ public class SendFileCommandProcessor : BaseCommandProcessor
         };
 
         var tasks = new List<Task>();
-        //foreach (var member in members)
-        //{
-        //    if (member == client.Username) continue; // 송신자 제외
+        foreach (var member in members)
+        {
+            if (member == client.Username) continue; // 송신자 제외
 
-        //    var memberClient = clients.FirstOrDefault(c => c.Username == member);
-        //    if (memberClient != null)
-        //    {
-        //        tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message, cancellationToken));
-        //    }
-        //}
+            var memberClient = clients.FirstOrDefault(c => c.Username == member);
+            if (memberClient != null)
+            {
+                tasks.Add(_broadcaster.SendToClientAsync(memberClient.Id, message, cancellationToken));
+            }
+        }
 
         if (tasks.Count > 0)
         {
