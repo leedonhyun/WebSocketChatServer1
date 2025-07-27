@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 using WebSocketChatServer1.Interfaces;
 using WebSocketChatServer1.Interfaces;
-using WebSocketChatServer1.Models;
+using WebSocketChatShared.Models;
 using WebSocketChatServer1.Telemetry;
 
 //using IGroupManager = WebSocketChatServer1.Interfaces.IGroupManager;

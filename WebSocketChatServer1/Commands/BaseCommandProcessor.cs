@@ -3,7 +3,7 @@ using WebSocketChatServer1.Telemetry;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using WebSocketChatServer1.Models;
+using WebSocketChatShared.Models;
 
 namespace WebSocketChatServer1.Commands;
 public abstract class BaseCommandProcessor : ICommandProcessor

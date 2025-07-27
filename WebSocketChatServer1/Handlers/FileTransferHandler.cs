@@ -1,5 +1,5 @@
 using WebSocketChatServer1.Interfaces;
-using WebSocketChatServer1.Models;
+using WebSocketChatShared.Models;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;

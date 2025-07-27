@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketChatServer1", "Web
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketChatServer.UserApi", "WebSocketChatServer.UserApi\WebSocketChatServer.UserApi.csproj", "{57F24D41-0BDA-E862-EC7A-D7E9901A7A53}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebSocketChatShared", "WebSocketChatShared\WebSocketChatShared.csproj", "{B4619B1D-5912-493D-94DC-BFD3BF698FAA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,18 @@ Global
 		{57F24D41-0BDA-E862-EC7A-D7E9901A7A53}.Release|x64.Build.0 = Release|Any CPU
 		{57F24D41-0BDA-E862-EC7A-D7E9901A7A53}.Release|x86.ActiveCfg = Release|Any CPU
 		{57F24D41-0BDA-E862-EC7A-D7E9901A7A53}.Release|x86.Build.0 = Release|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Debug|x64.Build.0 = Debug|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Debug|x86.Build.0 = Debug|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Release|x64.ActiveCfg = Release|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Release|x64.Build.0 = Release|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Release|x86.ActiveCfg = Release|Any CPU
+		{B4619B1D-5912-493D-94DC-BFD3BF698FAA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

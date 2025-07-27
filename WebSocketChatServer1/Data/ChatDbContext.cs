@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MongoDB.EntityFrameworkCore.Extensions;
-using WebSocketChatServer1.Models;
+using WebSocketChatShared.Models;
 
 namespace WebSocketChatServer1.Data;
 

@@ -48,6 +48,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WebSocketChatServer.AppHost.ServiceDefaults\WebSocketChatServer.AppHost.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\WebSocketChatShared\WebSocketChatShared.csproj" />
   </ItemGroup>
 
 </Project>

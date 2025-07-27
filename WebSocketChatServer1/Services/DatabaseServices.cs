@@ -1,6 +1,6 @@
 using WebSocketChatServer1.Data;
 using WebSocketChatServer1.Interfaces;
-using WebSocketChatServer1.Models;
+using WebSocketChatShared.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 

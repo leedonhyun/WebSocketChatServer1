@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace WebSocketChatServer1.Models;
+namespace WebSocketChatShared.Models;
 
 public class Group
 {

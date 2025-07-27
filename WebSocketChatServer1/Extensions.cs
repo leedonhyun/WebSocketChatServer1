@@ -2,7 +2,7 @@
 using WebSocketChatServer1.Data;
 using WebSocketChatServer1.Handlers;
 using WebSocketChatServer1.Interfaces;
-using WebSocketChatServer1.Models;
+using WebSocketChatShared.Models;
 using WebSocketChatServer1.Monitoring;
 using WebSocketChatServer1.Server;
 using WebSocketChatServer1.Services;

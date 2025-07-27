@@ -1,4 +1,4 @@
-namespace WebSocketChatServer1.Models;
+namespace WebSocketChatShared.Models;
 
 public enum ClientStatus
 {

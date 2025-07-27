@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using WebSocketChatServer1.Monitoring;
 using WebSocketChatServer1.Interfaces;
-using WebSocketChatServer1.Models;
+using WebSocketChatShared.Models;
 using System.ComponentModel.DataAnnotations;
 using WebSocketChatServer1.Interfaces;
 
@@ -97,7 +97,7 @@ public class MonitoringController : ControllerBase
     /// 최근 명령어 조회
     /// </summary>
     [HttpGet("commands/recent")]
-    public async Task<ActionResult<List<WebSocketChatServer1.Models.CommandLog>>> GetRecentCommands([FromQuery] int limit = 50)
+    public async Task<ActionResult<List<WebSocketChatShared.Models.CommandLog>>> GetRecentCommands([FromQuery] int limit = 50)
     {
         try
         {
@@ -115,7 +115,7 @@ public class MonitoringController : ControllerBase
     /// 특정 사용자의 명령어 이력 조회
     /// </summary>
     [HttpGet("users/{username}/commands")]
-    public async Task<ActionResult<List<WebSocketChatServer1.Models.CommandLog>>> GetUserCommands(
+    public async Task<ActionResult<List<WebSocketChatShared.Models.CommandLog>>> GetUserCommands(
         string username,
         [FromQuery] int limit = 50)
     {
@@ -135,7 +135,7 @@ public class MonitoringController : ControllerBase
     /// 에러 명령어 조회
     /// </summary>
     [HttpGet("commands/errors")]
-    public async Task<ActionResult<List<WebSocketChatServer1.Models.CommandLog>>> GetErrorCommands(
+    public async Task<ActionResult<List<WebSocketChatShared.Models.CommandLog>>> GetErrorCommands(
         [FromQuery] DateTime? fromDate = null,
         [FromQuery] int limit = 50)
     {

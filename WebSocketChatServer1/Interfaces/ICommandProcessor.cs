@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-using WebSocketChatServer1.Models;
+using WebSocketChatShared.Models;
 
 namespace WebSocketChatServer1.Interfaces;
 

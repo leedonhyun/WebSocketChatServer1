@@ -1,4 +1,4 @@
-using WebSocketChatServer1.Models;
+using WebSocketChatShared.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading;
